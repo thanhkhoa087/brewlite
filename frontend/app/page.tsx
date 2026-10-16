@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 type Product = {
@@ -34,14 +35,18 @@ export default function MenuPage() {
       <h1 className="mb-6 text-3xl font-bold">BrewLite</h1>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {products.map((p) => (
-          <div key={p.id} className="rounded-lg border p-4">
-            <div className="mb-3 flex h-32 items-center justify-center rounded bg-gray-100 text-gray-400">
-              Ảnh
-            </div>
-            <h2 className="font-semibold">{p.name}</h2>
-            <p>{p.price.toLocaleString('vi-VN')}đ</p>
-          </div>
-        ))}
+			<Link
+				key={p.id}
+				href={`/products/${p.id}`}
+				className="rounded-lg border p-4 hover:shadow"
+			>
+				<div className="mb-3 flex h-32 items-center justify-center rounded bg-gray-100 text-gray-400">
+					Ảnh
+				</div>
+				<h2 className="font-semibold">{p.name}</h2>
+				<p>{p.price.toLocaleString('vi-VN')}đ</p>
+			</Link>
+		))}
       </div>
     </main>
   );
