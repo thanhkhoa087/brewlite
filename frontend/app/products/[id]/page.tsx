@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useCartStore } from '@/lib/cartStore';
 
 type Product = {
   id: number;
@@ -29,6 +31,8 @@ export default function ProductDetailPage() {
   const [error, setError] = useState('');
   const [size, setSize] = useState('S');
   const [toppings, setToppings] = useState<string[]>([]);
+  const router = useRouter();
+  const addItem = useCartStore((s) => s.addItem);
 
   useEffect(() => {
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${id}`)
@@ -45,6 +49,17 @@ export default function ProductDetailPage() {
     setToppings((prev) =>
       prev.includes(label) ? prev.filter((t) => t !== label) : [...prev, label],
     );
+  }
+  function handleAdd() {
+	if (!product) return;
+	addItem({
+		productId: product.id,
+		name: product.name,
+		size,
+		toppings,
+		unitPrice,
+	});
+	router.push('/cart');
   }
 
   if (loading) return <p className="p-8">Đang tải...</p>;
@@ -99,7 +114,7 @@ export default function ProductDetailPage() {
       <p className="mb-4 text-xl font-bold">
         Thành tiền: {unitPrice.toLocaleString('vi-VN')}đ
       </p>
-      <button className="w-full rounded bg-black py-3 text-white">
+      <button onClick={handleAdd} className="w-full rounded bg-black py-3 text-white">
         Thêm vào giỏ
       </button>
     </main>

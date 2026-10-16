@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useCartStore } from '@/lib/cartStore';
 
 type Product = {
   id: number;
@@ -11,6 +12,9 @@ type Product = {
 };
 
 export default function MenuPage() {
+  const cartCount = useCartStore((s) =>
+  s.items.reduce((sum, i) => sum + i.qty, 0),
+  );
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -32,7 +36,12 @@ export default function MenuPage() {
 
   return (
     <main className="mx-auto max-w-4xl p-8">
-      <h1 className="mb-6 text-3xl font-bold">BrewLite</h1>
+      <div className="mb-6 flex items-center justify-between">
+		<h1 className="text-3xl font-bold">BrewLite</h1>
+		<Link href="/cart" className="rounded border px-4 py-2">
+			Giỏ hàng ({cartCount})
+		</Link>
+	  </div>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {products.map((p) => (
 			<Link
