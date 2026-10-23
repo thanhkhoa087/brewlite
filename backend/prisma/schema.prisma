@@ -14,3 +14,10 @@ model Product {
   imageUrl String
   stock    Int    @default(100)
 }
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  passwordHash  String
+  loyaltyPoints Int      @default(0)
+  createdAt     DateTime @default(now())
+}
