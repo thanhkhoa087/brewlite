@@ -20,4 +20,26 @@ model User {
   passwordHash  String
   loyaltyPoints Int      @default(0)
   createdAt     DateTime @default(now())
+  orders        Order[]
+}
+model Order {
+  id        Int         @id @default(autoincrement())
+  userId    Int
+  user      User        @relation(fields: [userId], references: [id])
+  status    String      @default("PENDING")
+  total     Int
+  createdAt DateTime    @default(now())
+  items     OrderItem[]
+}
+
+model OrderItem {
+  id        Int    @id @default(autoincrement())
+  orderId   Int
+  order     Order  @relation(fields: [orderId], references: [id])
+  productId Int
+  name      String
+  size      String
+  toppings  String @default("")
+  qty       Int
+  lineTotal Int
 }
