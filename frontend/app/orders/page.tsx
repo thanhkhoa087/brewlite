@@ -188,7 +188,7 @@ export default function OrdersHistoryPage() {
                         </span>
                       )}
                     </span>
-                    <span>{i.lineTotal.toLocaleString('vi-VN')}đ</span>
+                    <span>{i.lineTotal.toLocaleString('vi-VN')} đ</span>
                   </div>
                 ))}
               </div>
@@ -196,7 +196,7 @@ export default function OrdersHistoryPage() {
               {/* Chân thẻ đơn */}
               <div className="flex items-center justify-between border-t pt-3">
                 <span className="font-semibold text-gray-900">
-                  Tổng: {o.total.toLocaleString('vi-VN')}đ
+                  Tổng: {o.total.toLocaleString('vi-VN')} đ
                 </span>
 
                 <div className="flex gap-2">

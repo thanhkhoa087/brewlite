@@ -137,7 +137,7 @@ export default function MenuPage() {
 
               <div className="mt-4 flex items-center justify-between gap-2 border-t border-stone-100 pt-3">
                 <span className="text-base font-black text-amber-900">
-                  {p.price.toLocaleString('vi-VN')}đ
+                  {p.price.toLocaleString('vi-VN')} đ
                 </span>
                 <span className="shrink-0 whitespace-nowrap rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-900 transition-colors group-hover:bg-amber-900 group-hover:text-white">
                   Chọn size

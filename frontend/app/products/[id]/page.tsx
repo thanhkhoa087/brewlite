@@ -111,7 +111,7 @@ function ProductDetailContent() {
           <div className="flex items-baseline justify-between">
             <h1 className="text-2xl font-black text-stone-900">{product.name}</h1>
             <span className="text-sm font-semibold text-stone-500">
-              Gốc: {product.price.toLocaleString('vi-VN')}đ
+              Gốc: {product.price.toLocaleString('vi-VN')} đ
             </span>
           </div>
           <p className="mt-1 text-xs text-stone-500">
@@ -170,7 +170,7 @@ function ProductDetailContent() {
                   }`}
                 >
                   <span className="text-sm">
-                    {t.label} (+{t.extra.toLocaleString('vi-VN')}đ)
+                    {t.label} (+{t.extra.toLocaleString('vi-VN')} đ)
                   </span>
                   <input
                     type="checkbox"
@@ -185,10 +185,10 @@ function ProductDetailContent() {
 
           {/* Tổng tiền & Nút thêm vào giỏ */}
           <div className="mt-8 rounded-xl bg-stone-50 p-4 border border-stone-200">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
               <span className="text-sm font-semibold text-stone-600">Thành tiền tạm tính:</span>
-              <span className="text-2xl font-black text-amber-900">
-                {unitPrice.toLocaleString('vi-VN')}đ
+              <span className="text-2xl font-black text-amber-900 shrink-0">
+                {unitPrice.toLocaleString('vi-VN')} đ
               </span>
             </div>
           </div>
@@ -197,7 +197,7 @@ function ProductDetailContent() {
             onClick={handleAdd}
             className="mt-4 w-full rounded-xl bg-amber-900 py-3.5 font-bold text-white shadow-md hover:bg-amber-800 transition active:scale-[0.99]"
           >
-            Thêm vào giỏ hàng • {unitPrice.toLocaleString('vi-VN')}đ
+            Thêm vào giỏ hàng
           </button>
         </div>
       </div>

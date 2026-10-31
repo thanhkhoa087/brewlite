@@ -141,7 +141,7 @@ export default function CartPage() {
                   )}
                 </div>
                 <p className="font-extrabold text-amber-900 text-sm">
-                  {(i.unitPrice * i.qty).toLocaleString('vi-VN')}đ
+                  {(i.unitPrice * i.qty).toLocaleString('vi-VN')} đ
                 </p>
               </div>
 
@@ -179,7 +179,7 @@ export default function CartPage() {
           <div className="flex justify-between items-center text-base font-bold text-stone-800">
             <span>Tổng tiền:</span>
             <span className="text-2xl font-black text-amber-900">
-              {total.toLocaleString('vi-VN')}đ
+              {total.toLocaleString('vi-VN')} đ
             </span>
           </div>
         </div>
@@ -256,7 +256,7 @@ export default function CartPage() {
           disabled={submitting}
           className="mt-6 w-full rounded-xl bg-amber-900 py-3.5 font-bold text-white shadow-md hover:bg-amber-800 transition active:scale-[0.99] disabled:opacity-50"
         >
-          {submitting ? 'Đang xử lý đơn & thanh toán...' : `Xác nhận thanh toán • ${total.toLocaleString('vi-VN')}đ`}
+          {submitting ? 'Đang xử lý đơn & thanh toán...' : `Xác nhận thanh toán • ${total.toLocaleString('vi-VN')} đ`}
         </button>
       </div>
     </main>

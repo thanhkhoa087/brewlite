@@ -126,7 +126,7 @@ function ConfirmationContent() {
                   )}
                 </div>
                 <span className="text-gray-700">
-                  {item.lineTotal.toLocaleString('vi-VN')}đ
+                  {item.lineTotal.toLocaleString('vi-VN')} đ
                 </span>
               </div>
             ))}
@@ -136,7 +136,7 @@ function ConfirmationContent() {
         <div className="pt-3 border-t flex justify-between items-center text-lg font-bold">
           <span>Tổng thanh toán:</span>
           <span className="text-amber-900">
-            {order.total.toLocaleString('vi-VN')}đ
+            {order.total.toLocaleString('vi-VN')} đ
           </span>
         </div>
       </div>
