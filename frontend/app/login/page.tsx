@@ -46,9 +46,9 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto max-w-sm p-5 sm:p-8">
+    <main className="mx-auto max-w-md p-5 sm:p-8">
       <Link href="/" className="inline-flex items-center gap-1 text-sm font-semibold text-amber-900 hover:underline mb-4">
-        ← Quay lại menu
+        ← Quay lại menu chính
       </Link>
 
       <div className="rounded-2xl border border-stone-200 bg-white p-7 shadow-sm">
@@ -101,7 +101,7 @@ export default function LoginPage() {
         <button
           onClick={handleSubmit}
           disabled={loading}
-          className="mt-6 w-full rounded-xl bg-amber-900 py-3.5 font-bold text-white shadow hover:bg-amber-800 transition disabled:opacity-50"
+          className="mt-6 w-full rounded-xl bg-amber-900 py-3.5 font-bold text-white shadow-md hover:bg-amber-800 transition active:scale-[0.99] disabled:opacity-50"
         >
           {loading ? 'Đang xử lý...' : mode === 'login' ? 'Đăng nhập ngay' : 'Đăng ký tài khoản'}
         </button>

@@ -21,8 +21,8 @@ const DEFAULT_PRODUCTS: Product[] = [
 
 const SIZES = [
   { label: 'S', extra: 0, desc: 'Tiêu chuẩn (350ml)' },
-  { label: 'M', extra: 5000, desc: 'Vừa (+5.000đ / 500ml)' },
-  { label: 'L', extra: 10000, desc: 'Lớn (+10.000đ / 700ml)' },
+  { label: 'M', extra: 5000, desc: 'Vừa (+5.000 đ / 500ml)' },
+  { label: 'L', extra: 10000, desc: 'Lớn (+10.000 đ / 700ml)' },
 ];
 
 const TOPPINGS = [
@@ -39,6 +39,7 @@ function ProductDetailContent() {
   const [toppings, setToppings] = useState<string[]>([]);
   const router = useRouter();
   const addItem = useCartStore((s) => s.addItem);
+  const cartCount = useCartStore((s) => s.items.reduce((sum, i) => sum + i.qty, 0));
 
   useEffect(() => {
     if (!id) return;
@@ -76,9 +77,12 @@ function ProductDetailContent() {
   if (!product) {
     return (
       <main className="mx-auto max-w-md p-8 text-center bg-white rounded-2xl border border-stone-200 mt-8 shadow-sm">
-        <p className="text-red-600 font-semibold mb-4">Không tìm thấy sản phẩm</p>
-        <Link href="/" className="inline-block rounded-lg bg-stone-900 px-5 py-2 text-white font-medium">
-          ← Quay lại menu
+        <p className="text-rose-600 font-semibold mb-4">Không tìm thấy sản phẩm này</p>
+        <Link
+          href="/"
+          className="inline-block rounded-xl bg-amber-900 px-6 py-2.5 text-sm font-bold text-white shadow-md hover:bg-amber-800 transition active:scale-[0.99]"
+        >
+          ← Quay lại menu chính
         </Link>
       </main>
     );
@@ -93,9 +97,19 @@ function ProductDetailContent() {
 
   return (
     <main className="mx-auto max-w-md p-5 sm:p-8">
-      <Link href="/" className="inline-flex items-center gap-1 text-sm font-semibold text-amber-900 hover:underline mb-4">
-        ← Quay lại menu chính
-      </Link>
+      <div className="flex items-center justify-between mb-4">
+        <Link href="/" className="inline-flex items-center gap-1 text-sm font-semibold text-amber-900 hover:underline">
+          ← Quay lại menu chính
+        </Link>
+        {cartCount > 0 && (
+          <Link
+            href="/cart"
+            className="inline-flex items-center gap-1 text-sm font-bold text-amber-900 hover:underline"
+          >
+            🛒 Giỏ hàng ({cartCount})
+          </Link>
+        )}
+      </div>
 
       <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
         {/* Ảnh món nước */}
@@ -207,7 +221,13 @@ function ProductDetailContent() {
 
 export default function ProductDetailPage() {
   return (
-    <Suspense fallback={<p className="p-8 text-center text-stone-600">Đang tải chi tiết...</p>}>
+    <Suspense
+      fallback={
+        <main className="mx-auto max-w-md p-8 text-center text-stone-500 font-semibold">
+          ☕ Đang tải chi tiết món nước...
+        </main>
+      }
+    >
       <ProductDetailContent />
     </Suspense>
   );

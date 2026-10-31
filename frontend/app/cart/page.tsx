@@ -13,6 +13,7 @@ export default function CartPage() {
   const clearCart = useCartStore((s) => s.clear);
   const router = useRouter();
   const token = useAuthStore((s) => s.token);
+  const email = useAuthStore((s) => s.email);
 
   const [method, setMethod] = useState<'WALLET' | 'CARD'>('WALLET');
   const [simulateFailure, setSimulateFailure] = useState(false);
@@ -107,7 +108,7 @@ export default function CartPage() {
           </p>
           <Link
             href="/"
-            className="inline-block rounded-xl bg-amber-900 px-6 py-3 font-semibold text-white shadow hover:bg-amber-800 transition"
+            className="inline-block rounded-xl bg-amber-900 px-6 py-3 font-bold text-white shadow-md hover:bg-amber-800 transition active:scale-[0.99]"
           >
             ← Khám phá thực đơn
           </Link>
@@ -118,9 +119,20 @@ export default function CartPage() {
 
   return (
     <main className="mx-auto max-w-md p-5 sm:p-8">
-      <Link href="/" className="inline-flex items-center gap-1 text-sm font-semibold text-amber-900 hover:underline mb-4">
-        ← Thêm sản phẩm khác
-      </Link>
+      <div className="flex items-center justify-between mb-4">
+        <Link href="/" className="inline-flex items-center gap-1 text-sm font-semibold text-amber-900 hover:underline">
+          ← Thêm sản phẩm khác
+        </Link>
+        {email ? (
+          <span className="text-xs text-stone-500">
+            Tài khoản: <strong className="text-stone-800">{email}</strong>
+          </span>
+        ) : (
+          <Link href="/login" className="text-xs font-bold text-amber-900 hover:underline">
+            Đăng nhập
+          </Link>
+        )}
+      </div>
 
       <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-black text-stone-900 mb-6">Giỏ hàng của bạn</h1>
@@ -247,7 +259,12 @@ export default function CartPage() {
 
         {error && (
           <div className="mt-4 rounded-xl bg-red-50 p-3.5 text-xs font-semibold text-red-700 border border-red-200">
-            {error}
+            <p>{error}</p>
+            <div className="mt-2 pt-2 border-t border-red-200/60">
+              <Link href="/orders" className="font-bold text-amber-900 hover:underline">
+                → Đi đến lịch sử đơn hàng để xem chi tiết hoặc thanh toán lại
+              </Link>
+            </div>
           </div>
         )}
 

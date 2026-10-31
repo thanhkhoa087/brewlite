@@ -24,12 +24,14 @@ type Order = {
 
 export default function OrdersHistoryPage() {
   const token = useAuthStore((s) => s.token);
+  const email = useAuthStore((s) => s.email);
   const router = useRouter();
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [payingOrderId, setPayingOrderId] = useState<number | null>(null);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -60,6 +62,7 @@ export default function OrdersHistoryPage() {
 
   async function handleRetryPayment(orderId: number) {
     setPayingOrderId(orderId);
+    setToast(null);
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments`, {
         method: 'POST',
@@ -76,10 +79,16 @@ export default function OrdersHistoryPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Thanh toán thất bại');
 
-      alert(`Thanh toán đơn #${orderId} thành công!`);
+      setToast({
+        type: 'success',
+        message: `Thanh toán lại cho đơn #${orderId} thành công! Trạng thái đã chuyển sang PAID.`,
+      });
       fetchOrders();
     } catch (err) {
-      alert((err as Error).message);
+      setToast({
+        type: 'error',
+        message: (err as Error).message,
+      });
     } finally {
       setPayingOrderId(null);
     }
@@ -89,25 +98,28 @@ export default function OrdersHistoryPage() {
     switch (status) {
       case 'PAID':
         return (
-          <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
-            PAID (Đã thanh toán)
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+            Đã thanh toán (PAID)
           </span>
         );
       case 'PENDING':
         return (
-          <span className="rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-semibold text-yellow-800">
-            PENDING (Chờ thanh toán)
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800 ring-1 ring-inset ring-amber-600/20">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-600 animate-pulse" />
+            Chờ thanh toán (PENDING)
           </span>
         );
       case 'PAYMENT_FAILED':
         return (
-          <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800">
-            PAYMENT_FAILED (Lỗi thanh toán)
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20">
+            <span className="h-1.5 w-1.5 rounded-full bg-rose-600" />
+            Lỗi thanh toán (FAILED)
           </span>
         );
       default:
         return (
-          <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-800">
+          <span className="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-700">
             {status}
           </span>
         );
@@ -116,41 +128,85 @@ export default function OrdersHistoryPage() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-2xl p-8 text-center text-gray-600">
-        Đang tải lịch sử đơn hàng...
+      <main className="mx-auto max-w-xl p-8 text-center text-stone-500">
+        <p className="text-sm font-semibold">☕ Đang tải lịch sử đơn hàng...</p>
       </main>
     );
   }
 
   return (
-    <main className="mx-auto max-w-2xl p-6 sm:p-8">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <Link href="/" className="text-sm text-gray-500 hover:underline">
-            ← Quay lại menu
-          </Link>
-          <h1 className="mt-2 text-2xl font-bold text-gray-900">
-            Lịch sử đơn hàng của tôi
-          </h1>
-        </div>
+    <main className="mx-auto max-w-xl p-5 sm:p-8">
+      {/* Thanh điều hướng trên cùng */}
+      <div className="flex items-center justify-between mb-4">
         <Link
-          href="/cart"
-          className="rounded border border-gray-300 px-3 py-1.5 text-sm font-medium hover:bg-gray-50"
+          href="/"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-amber-900 hover:underline"
         >
-          Xem giỏ hàng
+          ← Quay lại menu chính
         </Link>
+        <div className="flex items-center gap-3">
+          {email && (
+            <span className="text-xs text-stone-500 hidden sm:inline">
+              Tài khoản: <strong className="text-stone-800">{email}</strong>
+            </span>
+          )}
+          <Link
+            href="/cart"
+            className="inline-flex items-center gap-1 text-sm font-bold text-amber-900 hover:underline"
+          >
+            🛒 Giỏ hàng
+          </Link>
+        </div>
       </div>
 
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      <div className="mb-6">
+        <h1 className="text-2xl font-black text-stone-900">
+          Lịch sử đơn hàng của tôi
+        </h1>
+        <p className="text-xs text-stone-500 mt-1">
+          Theo dõi trạng thái các đơn đồ uống bạn đã đặt
+        </p>
+      </div>
+
+      {/* Thông báo thao tác */}
+      {toast && (
+        <div
+          className={`mb-5 flex items-start justify-between rounded-xl p-3.5 text-xs font-semibold border ${
+            toast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              : 'bg-rose-50 text-rose-800 border-rose-200'
+          }`}
+        >
+          <span>{toast.message}</span>
+          <button
+            onClick={() => setToast(null)}
+            className="ml-2 font-bold text-stone-400 hover:text-stone-600"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-5 rounded-xl bg-rose-50 p-3.5 text-xs font-semibold text-rose-800 border border-rose-200">
+          {error}
+        </div>
+      )}
 
       {orders.length === 0 ? (
-        <div className="rounded-lg border p-8 text-center text-gray-500">
-          <p className="mb-4">Bạn chưa có đơn hàng nào.</p>
+        <div className="rounded-2xl border border-stone-200 bg-white p-8 text-center shadow-sm">
+          <span className="text-4xl">📋</span>
+          <h2 className="mt-4 text-xl font-bold text-stone-900">
+            Bạn chưa có đơn hàng nào
+          </h2>
+          <p className="mt-2 text-sm text-stone-500 mb-6">
+            Hãy khám phá các món nước thơm ngon tại BrewLite và đặt món ngay nhé!
+          </p>
           <Link
             href="/"
-            className="inline-block rounded bg-amber-900 px-4 py-2 text-sm font-medium text-white hover:bg-amber-800"
+            className="inline-block rounded-xl bg-amber-900 px-6 py-3 text-sm font-bold text-white shadow hover:bg-amber-800 transition"
           >
-            Đặt món ngay
+            ← Khám phá thực đơn
           </Link>
         </div>
       ) : (
@@ -158,14 +214,14 @@ export default function OrdersHistoryPage() {
           {orders.map((o) => (
             <div
               key={o.id}
-              className="rounded-lg border bg-white p-5 shadow-sm transition hover:shadow-md"
+              className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm transition hover:shadow-md"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-3">
                 <div>
                   <span className="text-base font-bold text-amber-900">
                     Đơn hàng #{o.id}
                   </span>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-stone-500 mt-0.5">
                     {new Date(o.createdAt).toLocaleString('vi-VN')}
                   </p>
                 </div>
@@ -177,32 +233,34 @@ export default function OrdersHistoryPage() {
                 {o.items.map((i) => (
                   <div
                     key={i.id}
-                    className="flex justify-between text-sm text-gray-700"
+                    className="flex justify-between text-sm text-stone-700"
                   >
                     <span>
                       {i.name} ({i.size}) x{i.qty}
                       {i.toppings && (
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-stone-500">
                           {' '}
                           (+{i.toppings})
                         </span>
                       )}
                     </span>
-                    <span>{i.lineTotal.toLocaleString('vi-VN')} đ</span>
+                    <span className="font-medium text-stone-800">
+                      {i.lineTotal.toLocaleString('vi-VN')} đ
+                    </span>
                   </div>
                 ))}
               </div>
 
               {/* Chân thẻ đơn */}
-              <div className="flex items-center justify-between border-t pt-3">
-                <span className="font-semibold text-gray-900">
-                  Tổng: {o.total.toLocaleString('vi-VN')} đ
+              <div className="flex items-center justify-between border-t border-stone-100 pt-3">
+                <span className="font-bold text-stone-900 text-sm">
+                  Tổng: <span className="text-amber-900 font-black text-base">{o.total.toLocaleString('vi-VN')} đ</span>
                 </span>
 
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
                   <Link
                     href={`/orders/${o.id}/confirmation`}
-                    className="rounded border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100"
+                    className="rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-1.5 text-xs font-bold text-stone-700 shadow-sm hover:bg-stone-100 transition"
                   >
                     Xem chi tiết
                   </Link>
@@ -210,9 +268,9 @@ export default function OrdersHistoryPage() {
                     <button
                       onClick={() => handleRetryPayment(o.id)}
                       disabled={payingOrderId === o.id}
-                      className="rounded bg-black px-3 py-1 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+                      className="rounded-xl bg-amber-900 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-amber-800 transition active:scale-[0.99] disabled:opacity-50"
                     >
-                      {payingOrderId === o.id ? 'Đang trả...' : 'Thanh toán lại'}
+                      {payingOrderId === o.id ? 'Đang xử lý...' : 'Thanh toán lại'}
                     </button>
                   )}
                 </div>
