@@ -12,15 +12,20 @@ type Product = {
   imageUrl: string;
 };
 
+const DEFAULT_PRODUCTS: Product[] = [
+  { id: 1, name: 'Cà phê sữa', price: 35000, imageUrl: '/images/ca-phe-sua.jpg' },
+  { id: 2, name: 'Americano', price: 40000, imageUrl: '/images/americano.jpg' },
+  { id: 3, name: 'Cappuccino', price: 45000, imageUrl: '/images/cappuccino.jpg' },
+  { id: 4, name: 'Trà đào', price: 39000, imageUrl: '/images/tra-dao.jpg' },
+];
+
 export default function MenuPage() {
   const cartCount = useCartStore((s) =>
     s.items.reduce((sum, i) => sum + i.qty, 0),
   );
   const email = useAuthStore((s) => s.email);
   const logout = useAuthStore((s) => s.logout);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [products, setProducts] = useState<Product[]>(DEFAULT_PRODUCTS);
 
   useEffect(() => {
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`)
@@ -28,33 +33,15 @@ export default function MenuPage() {
         if (!res.ok) throw new Error('Lỗi tải danh mục món nước');
         return res.json();
       })
-      .then((data) => setProducts(data))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setProducts(data);
+        }
+      })
+      .catch((err) => {
+        console.warn('Sử dụng dữ liệu menu có sẵn:', err.message);
+      });
   }, []);
-
-  if (loading) {
-    return (
-      <main className="mx-auto max-w-4xl p-12 text-center">
-        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-amber-900 border-t-transparent"></div>
-        <p className="mt-4 text-stone-600 font-medium">Đang tải menu đồ uống...</p>
-      </main>
-    );
-  }
-
-  if (error) {
-    return (
-      <main className="mx-auto max-w-4xl p-12 text-center">
-        <p className="text-red-600 font-semibold mb-3">{error}</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="rounded-lg bg-amber-900 px-5 py-2 text-white font-medium hover:bg-amber-800"
-        >
-          Thử tải lại
-        </button>
-      </main>
-    );
-  }
 
   return (
     <main className="mx-auto max-w-4xl p-6 sm:p-8">

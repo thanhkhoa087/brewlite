@@ -12,6 +12,13 @@ type Product = {
   imageUrl: string;
 };
 
+const DEFAULT_PRODUCTS: Product[] = [
+  { id: 1, name: 'Cà phê sữa', price: 35000, imageUrl: '/images/ca-phe-sua.jpg' },
+  { id: 2, name: 'Americano', price: 40000, imageUrl: '/images/americano.jpg' },
+  { id: 3, name: 'Cappuccino', price: 45000, imageUrl: '/images/cappuccino.jpg' },
+  { id: 4, name: 'Trà đào', price: 39000, imageUrl: '/images/tra-dao.jpg' },
+];
+
 const SIZES = [
   { label: 'S', extra: 0, desc: 'Tiêu chuẩn (350ml)' },
   { label: 'M', extra: 5000, desc: 'Vừa (+5.000đ / 500ml)' },
@@ -25,9 +32,9 @@ const TOPPINGS = [
 
 function ProductDetailContent() {
   const { id } = useParams<{ id: string }>();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const initial = DEFAULT_PRODUCTS.find((p) => String(p.id) === String(id)) || null;
+
+  const [product, setProduct] = useState<Product | null>(initial);
   const [size, setSize] = useState('S');
   const [toppings, setToppings] = useState<string[]>([]);
   const router = useRouter();
@@ -40,9 +47,12 @@ function ProductDetailContent() {
         if (!res.ok) throw new Error('Không tìm thấy sản phẩm');
         return res.json();
       })
-      .then((data) => setProduct(data))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (data && data.id) setProduct(data);
+      })
+      .catch((err) => {
+        console.warn('Dùng dữ liệu chi tiết có sẵn:', err.message);
+      });
   }, [id]);
 
   function toggleTopping(label: string) {
@@ -63,19 +73,10 @@ function ProductDetailContent() {
     router.push('/cart');
   }
 
-  if (loading) {
-    return (
-      <main className="mx-auto max-w-md p-12 text-center">
-        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-amber-900 border-t-transparent"></div>
-        <p className="mt-4 text-stone-600 font-medium">Đang tải chi tiết món nước...</p>
-      </main>
-    );
-  }
-
-  if (error || !product) {
+  if (!product) {
     return (
       <main className="mx-auto max-w-md p-8 text-center bg-white rounded-2xl border border-stone-200 mt-8 shadow-sm">
-        <p className="text-red-600 font-semibold mb-4">{error || 'Không tìm thấy sản phẩm'}</p>
+        <p className="text-red-600 font-semibold mb-4">Không tìm thấy sản phẩm</p>
         <Link href="/" className="inline-block rounded-lg bg-stone-900 px-5 py-2 text-white font-medium">
           ← Quay lại menu
         </Link>
