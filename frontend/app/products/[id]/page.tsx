@@ -13,9 +13,9 @@ type Product = {
 };
 
 const SIZES = [
-  { label: 'S', extra: 0 },
-  { label: 'M', extra: 5000 },
-  { label: 'L', extra: 10000 },
+  { label: 'S', extra: 0, desc: 'Tiêu chuẩn (350ml)' },
+  { label: 'M', extra: 5000, desc: 'Vừa (+5.000đ / 500ml)' },
+  { label: 'L', extra: 10000, desc: 'Lớn (+10.000đ / 700ml)' },
 ];
 
 const TOPPINGS = [
@@ -63,9 +63,25 @@ function ProductDetailContent() {
     router.push('/cart');
   }
 
-  if (loading) return <p className="p-8 text-center text-gray-600">Đang tải...</p>;
-  if (error || !product)
-    return <p className="p-8 text-center text-red-600">{error || 'Không tìm thấy'}</p>;
+  if (loading) {
+    return (
+      <main className="mx-auto max-w-md p-12 text-center">
+        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-amber-900 border-t-transparent"></div>
+        <p className="mt-4 text-stone-600 font-medium">Đang tải chi tiết món nước...</p>
+      </main>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <main className="mx-auto max-w-md p-8 text-center bg-white rounded-2xl border border-stone-200 mt-8 shadow-sm">
+        <p className="text-red-600 font-semibold mb-4">{error || 'Không tìm thấy sản phẩm'}</p>
+        <Link href="/" className="inline-block rounded-lg bg-stone-900 px-5 py-2 text-white font-medium">
+          ← Quay lại menu
+        </Link>
+      </main>
+    );
+  }
 
   const sizeExtra = SIZES.find((s) => s.label === size)!.extra;
   const toppingExtra = TOPPINGS.filter((t) => toppings.includes(t.label)).reduce(
@@ -75,72 +91,125 @@ function ProductDetailContent() {
   const unitPrice = product.price + sizeExtra + toppingExtra;
 
   return (
-    <main className="mx-auto max-w-md p-8">
-      <Link href="/" className="text-sm text-gray-500 hover:underline">
-        ← Quay lại menu
+    <main className="mx-auto max-w-md p-5 sm:p-8">
+      <Link href="/" className="inline-flex items-center gap-1 text-sm font-semibold text-amber-900 hover:underline mb-4">
+        ← Quay lại menu chính
       </Link>
-      <h1 className="mt-4 text-2xl font-bold text-gray-900">{product.name}</h1>
-      <p className="mb-6 text-gray-500">
-        Giá gốc: {product.price.toLocaleString('vi-VN')}đ
-      </p>
 
-      <h2 className="mb-2 font-semibold">Chọn Size</h2>
-      <div className="mb-6 flex gap-2">
-        {SIZES.map((s) => (
-          <button
-            key={s.label}
-            onClick={() => setSize(s.label)}
-            className={`rounded border px-4 py-2 font-medium transition ${
-              size === s.label
-                ? 'bg-amber-900 text-white border-amber-900'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            {s.label} {s.extra > 0 && `(+${s.extra / 1000}k)`}
-          </button>
-        ))}
-      </div>
+      <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
+        {/* Ảnh món nước */}
+        <div className="relative h-60 w-full overflow-hidden bg-stone-100">
+          <img
+            src={product.imageUrl || '/images/ca-phe-sua.jpg'}
+            alt={product.name}
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute top-3 right-3 rounded-full bg-black/60 px-3 py-1 text-xs font-bold text-white backdrop-blur-sm">
+            {product.name}
+          </div>
+        </div>
 
-      <h2 className="mb-2 font-semibold">Chọn Topping</h2>
-      <div className="mb-6 flex flex-col gap-2">
-        {TOPPINGS.map((t) => (
-          <label
-            key={t.label}
-            className="flex items-center gap-2 cursor-pointer rounded border p-2 hover:bg-gray-50"
-          >
-            <input
-              type="checkbox"
-              checked={toppings.includes(t.label)}
-              onChange={() => toggleTopping(t.label)}
-            />
-            <span className="text-sm text-gray-800">
-              {t.label} (+{t.extra.toLocaleString('vi-VN')}đ)
+        <div className="p-6">
+          <div className="flex items-baseline justify-between">
+            <h1 className="text-2xl font-black text-stone-900">{product.name}</h1>
+            <span className="text-sm font-semibold text-stone-500">
+              Gốc: {product.price.toLocaleString('vi-VN')}đ
             </span>
-          </label>
-        ))}
-      </div>
+          </div>
+          <p className="mt-1 text-xs text-stone-500">
+            Tùy chỉnh ly nước theo đúng khẩu vị của bạn
+          </p>
 
-      <div className="rounded bg-amber-50 p-3 mb-6 border border-amber-200">
-        <p className="text-lg font-bold text-amber-900">
-          Thành tiền: {unitPrice.toLocaleString('vi-VN')}đ
-        </p>
-      </div>
+          {/* Chọn Size */}
+          <div className="mt-6">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700 mb-3">
+              1. Chọn kích cỡ (Size)
+            </h2>
+            <div className="flex flex-col gap-2">
+              {SIZES.map((s) => (
+                <label
+                  key={s.label}
+                  onClick={() => setSize(s.label)}
+                  className={`flex cursor-pointer items-center justify-between rounded-xl border p-3.5 transition ${
+                    size === s.label
+                      ? 'border-amber-900 bg-amber-50/70 text-amber-950 font-bold ring-2 ring-amber-900/20'
+                      : 'border-stone-200 bg-white text-stone-800 hover:bg-stone-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+                      size === s.label ? 'bg-amber-900 text-white' : 'bg-stone-100 text-stone-600'
+                    }`}>
+                      {s.label}
+                    </span>
+                    <span className="text-sm">{s.desc}</span>
+                  </div>
+                  <input
+                    type="radio"
+                    name="size"
+                    checked={size === s.label}
+                    onChange={() => setSize(s.label)}
+                    className="accent-amber-900"
+                  />
+                </label>
+              ))}
+            </div>
+          </div>
 
-      <button
-        onClick={handleAdd}
-        className="w-full rounded bg-amber-900 py-3 font-semibold text-white transition hover:bg-amber-800"
-      >
-        Thêm vào giỏ hàng
-      </button>
+          {/* Chọn Topping */}
+          <div className="mt-6">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700 mb-3">
+              2. Chọn Topping thêm
+            </h2>
+            <div className="flex flex-col gap-2">
+              {TOPPINGS.map((t) => (
+                <label
+                  key={t.label}
+                  className={`flex cursor-pointer items-center justify-between rounded-xl border p-3.5 transition ${
+                    toppings.includes(t.label)
+                      ? 'border-amber-900 bg-amber-50/70 text-amber-950 font-bold ring-2 ring-amber-900/20'
+                      : 'border-stone-200 bg-white text-stone-800 hover:bg-stone-50'
+                  }`}
+                >
+                  <span className="text-sm">
+                    {t.label} (+{t.extra.toLocaleString('vi-VN')}đ)
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={toppings.includes(t.label)}
+                    onChange={() => toggleTopping(t.label)}
+                    className="h-4 w-4 rounded accent-amber-900"
+                  />
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Tổng tiền & Nút thêm vào giỏ */}
+          <div className="mt-8 rounded-xl bg-stone-50 p-4 border border-stone-200">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-stone-600">Thành tiền tạm tính:</span>
+              <span className="text-2xl font-black text-amber-900">
+                {unitPrice.toLocaleString('vi-VN')}đ
+              </span>
+            </div>
+          </div>
+
+          <button
+            onClick={handleAdd}
+            className="mt-4 w-full rounded-xl bg-amber-900 py-3.5 font-bold text-white shadow-md hover:bg-amber-800 transition active:scale-[0.99]"
+          >
+            Thêm vào giỏ hàng • {unitPrice.toLocaleString('vi-VN')}đ
+          </button>
+        </div>
+      </div>
     </main>
   );
 }
 
 export default function ProductDetailPage() {
   return (
-    <Suspense
-      fallback={<p className="p-8 text-center text-gray-600">Đang tải...</p>}
-    >
+    <Suspense fallback={<p className="p-8 text-center text-stone-600">Đang tải chi tiết...</p>}>
       <ProductDetailContent />
     </Suspense>
   );

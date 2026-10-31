@@ -86,7 +86,7 @@ export default function CartPage() {
       } else {
         // Thất bại: Đơn ở trạng thái PAYMENT_FAILED, giỏ hàng giữ nguyên
         setError(
-          `Thanh toán không thành công! Đơn hàng #${orderData.id} chuyển sang trạng thái PAYMENT_FAILED. Giỏ hàng của bạn được giữ nguyên để thử lại.`,
+          `Thanh toán không thành công! Đơn hàng #${orderData.id} chuyển sang trạng thái PAYMENT_FAILED. Giỏ hàng được giữ nguyên để bạn thử lại.`,
         );
       }
     } catch (err) {
@@ -98,134 +98,167 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <main className="mx-auto max-w-md p-8 text-center">
-        <p className="mb-4 text-gray-600">Giỏ hàng của bạn đang trống.</p>
-        <Link
-          href="/"
-          className="inline-block rounded bg-black px-6 py-2 text-white"
-        >
-          ← Xem menu món nước
-        </Link>
+      <main className="mx-auto max-w-md p-10 text-center">
+        <div className="rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
+          <span className="text-4xl">🛒</span>
+          <h2 className="mt-4 text-xl font-bold text-stone-900">Giỏ hàng đang trống</h2>
+          <p className="mt-2 text-sm text-stone-500 mb-6">
+            Hãy khám phá các món nước thơm ngon tại quầy BrewLite ngay nhé!
+          </p>
+          <Link
+            href="/"
+            className="inline-block rounded-xl bg-amber-900 px-6 py-3 font-semibold text-white shadow hover:bg-amber-800 transition"
+          >
+            ← Khám phá thực đơn
+          </Link>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="mx-auto max-w-md p-8">
-      <Link href="/" className="text-sm text-gray-500 hover:underline">
+    <main className="mx-auto max-w-md p-5 sm:p-8">
+      <Link href="/" className="inline-flex items-center gap-1 text-sm font-semibold text-amber-900 hover:underline mb-4">
         ← Thêm sản phẩm khác
       </Link>
-      <h1 className="mb-6 mt-4 text-2xl font-bold">Giỏ hàng BrewLite</h1>
 
-      <div className="flex flex-col gap-4">
-        {items.map((i) => (
-          <div key={i.key} className="rounded border p-4 shadow-sm">
-            <div className="flex justify-between">
-              <div>
-                <p className="font-semibold">
-                  {i.name} ({i.size})
-                </p>
-                {i.toppings.length > 0 && (
-                  <p className="text-sm text-gray-500">
-                    + {i.toppings.join(', ')}
+      <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+        <h1 className="text-2xl font-black text-stone-900 mb-6">Giỏ hàng của bạn</h1>
+
+        {/* Danh sách món */}
+        <div className="flex flex-col gap-3">
+          {items.map((i) => (
+            <div key={i.key} className="rounded-xl border border-stone-200 bg-stone-50/50 p-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-bold text-stone-900 text-base">
+                    {i.name} ({i.size})
                   </p>
-                )}
+                  {i.toppings.length > 0 && (
+                    <p className="text-xs text-stone-500 mt-0.5">
+                      + Topping: {i.toppings.join(', ')}
+                    </p>
+                  )}
+                </div>
+                <p className="font-extrabold text-amber-900 text-sm">
+                  {(i.unitPrice * i.qty).toLocaleString('vi-VN')}đ
+                </p>
               </div>
-              <p className="font-medium">
-                {(i.unitPrice * i.qty).toLocaleString('vi-VN')}đ
-              </p>
+
+              <div className="mt-3 flex items-center justify-between border-t border-stone-200/60 pt-2.5">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setQty(i.key, i.qty - 1)}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-stone-300 bg-white font-bold text-stone-700 hover:bg-stone-100"
+                  >
+                    −
+                  </button>
+                  <span className="w-6 text-center font-bold text-stone-900 text-sm">
+                    {i.qty}
+                  </span>
+                  <button
+                    onClick={() => setQty(i.key, i.qty + 1)}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-stone-300 bg-white font-bold text-stone-700 hover:bg-stone-100"
+                  >
+                    +
+                  </button>
+                </div>
+                <button
+                  onClick={() => removeItem(i.key)}
+                  className="text-xs font-semibold text-red-600 hover:text-red-800 hover:underline"
+                >
+                  Xóa món
+                </button>
+              </div>
             </div>
-            <div className="mt-3 flex items-center gap-2">
-              <button
-                onClick={() => setQty(i.key, i.qty - 1)}
-                className="rounded border px-3 py-1 hover:bg-gray-100"
-              >
-                −
-              </button>
-              <span className="font-semibold">{i.qty}</span>
-              <button
-                onClick={() => setQty(i.key, i.qty + 1)}
-                className="rounded border px-3 py-1 hover:bg-gray-100"
-              >
-                +
-              </button>
-              <button
-                onClick={() => removeItem(i.key)}
-                className="ml-auto text-sm text-red-600 hover:underline"
-              >
-                Xóa
-              </button>
-            </div>
+          ))}
+        </div>
+
+        {/* Tổng tiền */}
+        <div className="mt-6 rounded-xl bg-amber-50 p-4 border border-amber-200">
+          <div className="flex justify-between items-center text-base font-bold text-stone-800">
+            <span>Tổng tiền:</span>
+            <span className="text-2xl font-black text-amber-900">
+              {total.toLocaleString('vi-VN')}đ
+            </span>
           </div>
-        ))}
-      </div>
-
-      <div className="mt-6 rounded-lg border bg-gray-50 p-4">
-        <div className="flex justify-between text-lg font-bold">
-          <span>Tổng tiền:</span>
-          <span className="text-amber-800">
-            {total.toLocaleString('vi-VN')}đ
-          </span>
         </div>
-      </div>
 
-      {/* Phương thức thanh toán (Task 8) */}
-      <div className="mt-6">
-        <h2 className="mb-2 font-semibold">Phương thức thanh toán</h2>
-        <div className="flex flex-col gap-2">
-          <label className="flex cursor-pointer items-center gap-3 rounded border p-3 hover:bg-gray-50">
+        {/* Chọn phương thức thanh toán */}
+        <div className="mt-6 border-t border-stone-200 pt-5">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-stone-700 mb-3">
+            Phương thức thanh toán không tiền mặt
+          </h2>
+          <div className="flex flex-col gap-2.5">
+            <label
+              className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3.5 transition ${
+                method === 'WALLET'
+                  ? 'border-amber-900 bg-amber-50/70 text-amber-950 font-bold ring-2 ring-amber-900/20'
+                  : 'border-stone-200 bg-white text-stone-800 hover:bg-stone-50'
+              }`}
+            >
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="WALLET"
+                checked={method === 'WALLET'}
+                onChange={() => setMethod('WALLET')}
+                className="accent-amber-900"
+              />
+              <div>
+                <p className="text-sm font-bold text-stone-900">📱 Ví điện tử</p>
+                <p className="text-xs text-stone-500">MoMo / ZaloPay / VNPay QR</p>
+              </div>
+            </label>
+
+            <label
+              className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3.5 transition ${
+                method === 'CARD'
+                  ? 'border-amber-900 bg-amber-50/70 text-amber-950 font-bold ring-2 ring-amber-900/20'
+                  : 'border-stone-200 bg-white text-stone-800 hover:bg-stone-50'
+              }`}
+            >
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="CARD"
+                checked={method === 'CARD'}
+                onChange={() => setMethod('CARD')}
+                className="accent-amber-900"
+              />
+              <div>
+                <p className="text-sm font-bold text-stone-900">💳 Thẻ ngân hàng</p>
+                <p className="text-xs text-stone-500">ATM Nội địa / Visa / Mastercard</p>
+              </div>
+            </label>
+          </div>
+
+          {/* Checkbox mô phỏng thanh toán lỗi */}
+          <label className="mt-4 flex items-center gap-2 cursor-pointer text-xs font-medium text-stone-500 hover:text-stone-800">
             <input
-              type="radio"
-              name="paymentMethod"
-              value="WALLET"
-              checked={method === 'WALLET'}
-              onChange={() => setMethod('WALLET')}
+              type="checkbox"
+              checked={simulateFailure}
+              onChange={(e) => setSimulateFailure(e.target.checked)}
+              className="rounded accent-amber-900"
             />
-            <div>
-              <p className="font-medium">Ví điện tử</p>
-              <p className="text-xs text-gray-500">MoMo / ZaloPay / VNPay</p>
-            </div>
-          </label>
-
-          <label className="flex cursor-pointer items-center gap-3 rounded border p-3 hover:bg-gray-50">
-            <input
-              type="radio"
-              name="paymentMethod"
-              value="CARD"
-              checked={method === 'CARD'}
-              onChange={() => setMethod('CARD')}
-            />
-            <div>
-              <p className="font-medium">Thẻ ngân hàng</p>
-              <p className="text-xs text-gray-500">Thẻ ATM nội địa / Visa / Mastercard</p>
-            </div>
+            Mô phỏng thanh toán thất bại (để kiểm tra PAYMENT_FAILED)
           </label>
         </div>
 
-        {/* Checkbox mô phỏng thanh toán lỗi (tiêu chí test Task 8) */}
-        <label className="mt-4 flex items-center gap-2 text-xs text-gray-500">
-          <input
-            type="checkbox"
-            checked={simulateFailure}
-            onChange={(e) => setSimulateFailure(e.target.checked)}
-          />
-          Mô phỏng thanh toán thất bại (để kiểm tra PAYMENT_FAILED)
-        </label>
+        {error && (
+          <div className="mt-4 rounded-xl bg-red-50 p-3.5 text-xs font-semibold text-red-700 border border-red-200">
+            {error}
+          </div>
+        )}
+
+        <button
+          onClick={handleCheckout}
+          disabled={submitting}
+          className="mt-6 w-full rounded-xl bg-amber-900 py-3.5 font-bold text-white shadow-md hover:bg-amber-800 transition active:scale-[0.99] disabled:opacity-50"
+        >
+          {submitting ? 'Đang xử lý đơn & thanh toán...' : `Xác nhận thanh toán • ${total.toLocaleString('vi-VN')}đ`}
+        </button>
       </div>
-
-      {error && (
-        <div className="mt-4 rounded bg-red-50 p-3 text-sm text-red-700 border border-red-200">
-          {error}
-        </div>
-      )}
-
-      <button
-        onClick={handleCheckout}
-        disabled={submitting}
-        className="mt-6 w-full rounded bg-amber-900 py-3 font-semibold text-white transition hover:bg-amber-800 disabled:opacity-50"
-      >
-        {submitting ? 'Đang xử lý đơn & thanh toán...' : 'Xác nhận thanh toán'}
-      </button>
     </main>
   );
 }
