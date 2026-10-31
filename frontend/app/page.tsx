@@ -14,7 +14,7 @@ type Product = {
 
 export default function MenuPage() {
   const cartCount = useCartStore((s) =>
-  s.items.reduce((sum, i) => sum + i.qty, 0),
+    s.items.reduce((sum, i) => sum + i.qty, 0),
   );
   const email = useAuthStore((s) => s.email);
   const logout = useAuthStore((s) => s.logout);
@@ -33,28 +33,37 @@ export default function MenuPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <p className="p-8">Đang tải menu...</p>;
-  if (error) return <p className="p-8 text-red-600">{error}</p>;
-  if (products.length === 0) return <p className="p-8">Chưa có sản phẩm nào.</p>;
+  if (loading) return <p className="p-8 text-center text-gray-600">Đang tải menu...</p>;
+  if (error) return <p className="p-8 text-center text-red-600">{error}</p>;
+  if (products.length === 0) return <p className="p-8 text-center">Chưa có sản phẩm nào.</p>;
 
-    return (
-    <main className="mx-auto max-w-4xl p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">BrewLite</h1>
+  return (
+    <main className="mx-auto max-w-4xl p-6 sm:p-8">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-amber-950">BrewLite</h1>
+          <p className="text-xs text-amber-800">Cà phê không tiền mặt</p>
+        </div>
         <div className="flex items-center gap-3">
           {email ? (
             <>
-              <span className="text-sm text-gray-600">{email}</span>
-              <button onClick={logout} className="text-sm underline">
+              <span className="text-sm text-gray-600 hidden sm:inline">{email}</span>
+              <Link href="/orders" className="text-sm text-amber-900 font-medium hover:underline">
+                Đơn hàng
+              </Link>
+              <button onClick={logout} className="text-sm text-gray-500 hover:underline">
                 Đăng xuất
               </button>
             </>
           ) : (
-            <Link href="/login" className="text-sm underline">
+            <Link href="/login" className="text-sm font-medium text-amber-900 hover:underline">
               Đăng nhập
             </Link>
           )}
-          <Link href="/cart" className="rounded border px-4 py-2">
+          <Link
+            href="/cart"
+            className="rounded-full bg-amber-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-800"
+          >
             Giỏ hàng ({cartCount})
           </Link>
         </div>
@@ -65,13 +74,15 @@ export default function MenuPage() {
           <Link
             key={p.id}
             href={`/products/${p.id}`}
-            className="rounded-lg border p-4 hover:shadow"
+            className="rounded-lg border bg-white p-4 shadow-sm transition hover:shadow-md"
           >
-            <div className="mb-3 flex h-32 items-center justify-center rounded bg-gray-100 text-gray-400">
-              Ảnh
+            <div className="mb-3 flex h-32 items-center justify-center rounded bg-amber-50 text-amber-900 text-3xl font-bold">
+              ☕
             </div>
-            <h2 className="font-semibold">{p.name}</h2>
-            <p>{p.price.toLocaleString('vi-VN')}đ</p>
+            <h2 className="font-semibold text-gray-900">{p.name}</h2>
+            <p className="mt-1 text-sm font-bold text-amber-800">
+              {p.price.toLocaleString('vi-VN')}đ
+            </p>
           </Link>
         ))}
       </div>
