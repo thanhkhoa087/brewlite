@@ -137,9 +137,6 @@ export default function MenuPage() {
                 alt={p.name}
                 className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
-              <div className="absolute top-2 right-2 rounded-full bg-black/60 px-2.5 py-0.5 text-xs font-semibold text-white backdrop-blur-sm">
-                BrewLite
-              </div>
             </div>
 
             {/* Thông tin món */}
@@ -151,12 +148,12 @@ export default function MenuPage() {
                 <p className="text-xs text-stone-500 mt-1">Đồ uống pha chế tươi</p>
               </div>
 
-              <div className="mt-4 flex items-center justify-between border-t border-stone-100 pt-3">
-                <span className="text-base font-extrabold text-amber-900">
+              <div className="mt-4 flex items-center justify-between gap-2 border-t border-stone-100 pt-3">
+                <span className="text-base font-black text-amber-900">
                   {p.price.toLocaleString('vi-VN')}đ
                 </span>
-                <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-900 group-hover:bg-amber-900 group-hover:text-white transition">
-                  + Chọn size
+                <span className="shrink-0 whitespace-nowrap rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-900 transition-colors group-hover:bg-amber-900 group-hover:text-white">
+                  Chọn size
                 </span>
               </div>
             </div>

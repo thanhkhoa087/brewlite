@@ -104,9 +104,6 @@ function ProductDetailContent() {
             alt={product.name}
             className="h-full w-full object-cover"
           />
-          <div className="absolute top-3 right-3 rounded-full bg-black/60 px-3 py-1 text-xs font-bold text-white backdrop-blur-sm">
-            {product.name}
-          </div>
         </div>
 
         <div className="p-6">
