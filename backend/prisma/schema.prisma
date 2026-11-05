@@ -13,6 +13,7 @@ model Product {
   price    Int
   imageUrl String
   stock    Int    @default(100)
+  version  Int    @default(0)
 }
 
 model User {
@@ -25,14 +26,17 @@ model User {
 }
 
 model Order {
-  id        Int         @id @default(autoincrement())
-  userId    Int
-  user      User        @relation(fields: [userId], references: [id])
-  status    String      @default("PENDING")
-  total     Int
-  createdAt DateTime    @default(now())
-  items     OrderItem[]
-  payments  Payment[]
+  id             Int         @id @default(autoincrement())
+  userId         Int
+  user           User        @relation(fields: [userId], references: [id])
+  status         String      @default("PENDING")
+  total          Int
+  discount       Int         @default(0)
+  voucherCode    String?
+  idempotencyKey String?     @unique
+  createdAt      DateTime    @default(now())
+  items          OrderItem[]
+  payments       Payment[]
 }
 
 model OrderItem {
@@ -54,6 +58,6 @@ model Payment {
   method         String
   amount         Int
   status         String
-  idempotencyKey String?
+  idempotencyKey String?  @unique
   createdAt      DateTime @default(now())
 }

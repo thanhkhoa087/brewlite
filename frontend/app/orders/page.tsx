@@ -103,6 +103,27 @@ export default function OrdersHistoryPage() {
             Đã thanh toán (PAID)
           </span>
         );
+      case 'PREPARING':
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-inset ring-blue-600/20">
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-pulse" />
+            Đang pha chế (PREPARING)
+          </span>
+        );
+      case 'READY':
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-700 ring-1 ring-inset ring-cyan-600/20">
+            <span className="h-1.5 w-1.5 rounded-full bg-cyan-600" />
+            Sẵn sàng nhận món (READY)
+          </span>
+        );
+      case 'COMPLETED':
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-800 ring-1 ring-inset ring-stone-500/20">
+            <span className="h-1.5 w-1.5 rounded-full bg-stone-700" />
+            Hoàn tất (COMPLETED)
+          </span>
+        );
       case 'PENDING':
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800 ring-1 ring-inset ring-amber-600/20">
@@ -115,6 +136,12 @@ export default function OrdersHistoryPage() {
           <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20">
             <span className="h-1.5 w-1.5 rounded-full bg-rose-600" />
             Lỗi thanh toán (FAILED)
+          </span>
+        );
+      case 'CANCELLED':
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-200 px-3 py-1 text-xs font-bold text-stone-600">
+            Đã hủy (CANCELLED)
           </span>
         );
       default:

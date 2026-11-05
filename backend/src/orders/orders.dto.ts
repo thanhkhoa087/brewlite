@@ -4,6 +4,7 @@ import {
   IsArray,
   IsIn,
   IsInt,
+  IsOptional,
   IsString,
   Min,
   ValidateNested,
@@ -31,4 +32,25 @@ export class CreateOrderDto {
   @ValidateNested({ each: true })
   @Type(() => OrderItemDto)
   items: OrderItemDto[];
+
+  @IsOptional()
+  @IsString()
+  voucherCode?: string;
+
+  @IsOptional()
+  @IsString()
+  idempotencyKey?: string;
+}
+
+export class UpdateOrderStatusDto {
+  @IsIn([
+    'PENDING',
+    'PAID',
+    'PREPARING',
+    'READY',
+    'COMPLETED',
+    'PAYMENT_FAILED',
+    'CANCELLED',
+  ])
+  status: string;
 }

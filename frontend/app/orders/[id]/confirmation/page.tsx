@@ -18,6 +18,8 @@ type OrderDetail = {
   id: number;
   status: string;
   total: number;
+  discount?: number;
+  voucherCode?: string;
   createdAt: string;
   items: OrderItem[];
 };
@@ -29,6 +31,7 @@ function ConfirmationContent() {
 
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -56,6 +59,31 @@ function ConfirmationContent() {
       .finally(() => setLoading(false));
   }, [id, token, router]);
 
+  // Task 10: Chuyển đổi trạng thái mô phỏng Barista/Admin
+  async function handleAdvanceStatus(nextStatus: string) {
+    if (!token || !order) return;
+    setUpdatingStatus(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/${order.id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Lỗi khi cập nhật trạng thái');
+      }
+      setOrder((prev) => (prev ? { ...prev, status: nextStatus } : prev));
+    } catch (err) {
+      alert((err as Error).message);
+    } finally {
+      setUpdatingStatus(false);
+    }
+  }
+
   function getStatusBadge(status: string) {
     switch (status) {
       case 'PAID':
@@ -63,6 +91,27 @@ function ConfirmationContent() {
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
             Đã thanh toán (PAID)
+          </span>
+        );
+      case 'PREPARING':
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-inset ring-blue-600/20">
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-pulse" />
+            Đang pha chế (PREPARING)
+          </span>
+        );
+      case 'READY':
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-700 ring-1 ring-inset ring-cyan-600/20">
+            <span className="h-1.5 w-1.5 rounded-full bg-cyan-600" />
+            Sẵn sàng nhận món (READY)
+          </span>
+        );
+      case 'COMPLETED':
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-800 ring-1 ring-inset ring-stone-500/20">
+            <span className="h-1.5 w-1.5 rounded-full bg-stone-700" />
+            Hoàn tất (COMPLETED)
           </span>
         );
       case 'PENDING':
@@ -77,6 +126,12 @@ function ConfirmationContent() {
           <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700 ring-1 ring-inset ring-rose-600/20">
             <span className="h-1.5 w-1.5 rounded-full bg-rose-600" />
             Lỗi thanh toán (FAILED)
+          </span>
+        );
+      case 'CANCELLED':
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-200 px-3 py-1 text-xs font-bold text-stone-600">
+            Đã hủy (CANCELLED)
           </span>
         );
       default:
@@ -112,38 +167,32 @@ function ConfirmationContent() {
     );
   }
 
-  const isPaid = order.status === 'PAID';
+  const isSuccessFlow = ['PAID', 'PREPARING', 'READY', 'COMPLETED'].includes(order.status);
+
+  // Tiến trình luồng Order State Machine
+  const steps = [
+    { key: 'PENDING', label: 'Tạo đơn' },
+    { key: 'PAID', label: 'Thanh toán' },
+    { key: 'PREPARING', label: 'Pha chế' },
+    { key: 'READY', label: 'Sẵn sàng' },
+    { key: 'COMPLETED', label: 'Nhận món' },
+  ];
+  const stepIdx = steps.findIndex((s) => s.key === order.status);
 
   return (
-    <main className="mx-auto max-w-md p-5 sm:p-8">
-      {/* Thanh điều hướng */}
-      <div className="flex items-center justify-between mb-4">
-        <Link
-          href="/orders"
-          className="inline-flex items-center gap-1 text-sm font-semibold text-amber-900 hover:underline"
-        >
-          ← Xem tất cả đơn hàng
-        </Link>
-        <Link
-          href="/"
-          className="text-xs font-semibold text-stone-500 hover:text-amber-900"
-        >
-          Về menu chính
-        </Link>
-      </div>
-
-      {/* Biểu tượng trạng thái */}
-      <div className="text-center my-6">
-        {isPaid ? (
+    <main className="mx-auto max-w-md p-4">
+      {/* Header trạng thái */}
+      <div className="text-center py-6">
+        {isSuccessFlow ? (
           <>
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-3xl font-black shadow-sm">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 text-3xl font-black shadow-sm">
               ✓
             </div>
             <h1 className="mt-4 text-2xl font-black text-stone-900">
-              Đặt hàng thành công!
+              {order.status === 'COMPLETED' ? 'Đơn hàng hoàn tất!' : 'Đặt hàng thành công!'}
             </h1>
             <p className="text-xs text-stone-500 mt-1">
-              Cảm ơn quý khách đã mua sắm tại BrewLite
+              Cảm ơn bạn đã sử dụng phương thức thanh toán không tiền mặt BrewLite.
             </p>
           </>
         ) : (
@@ -160,6 +209,74 @@ function ConfirmationContent() {
           </>
         )}
       </div>
+
+      {/* Sơ đồ tiến trình Order State Machine (Task 10) */}
+      {isSuccessFlow && (
+        <div className="mb-4 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-wider text-stone-600 mb-3 text-center">
+            Quy trình phục vụ (Order State Machine)
+          </p>
+          <div className="flex items-center justify-between relative px-2">
+            {steps.map((st, i) => {
+              const done = i <= stepIdx;
+              const active = i === stepIdx;
+              return (
+                <div key={st.key} className="flex flex-col items-center z-10">
+                  <div
+                    className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold transition ${
+                      active
+                        ? 'bg-amber-900 text-white ring-4 ring-amber-100'
+                        : done
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-stone-200 text-stone-500'
+                    }`}
+                  >
+                    {done && !active ? '✓' : i + 1}
+                  </div>
+                  <span
+                    className={`text-[10px] mt-1 font-semibold ${
+                      active ? 'text-amber-900 font-bold' : done ? 'text-stone-700' : 'text-stone-400'
+                    }`}
+                  >
+                    {st.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Nút mô phỏng Barista chuyển trạng thái cho buổi Demo */}
+          <div className="mt-4 border-t border-stone-100 pt-3 flex flex-wrap gap-2 justify-center">
+            {order.status === 'PAID' && (
+              <button
+                onClick={() => handleAdvanceStatus('PREPARING')}
+                disabled={updatingStatus}
+                className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700 transition"
+              >
+                ☕ Barista bắt đầu pha chế (→ PREPARING)
+              </button>
+            )}
+            {order.status === 'PREPARING' && (
+              <button
+                onClick={() => handleAdvanceStatus('READY')}
+                disabled={updatingStatus}
+                className="rounded-lg bg-cyan-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-cyan-700 transition"
+              >
+                🔔 Pha xong, mời nhận món (→ READY)
+              </button>
+            )}
+            {order.status === 'READY' && (
+              <button
+                onClick={() => handleAdvanceStatus('COMPLETED')}
+                disabled={updatingStatus}
+                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 transition"
+              >
+                🎉 Khách đã lấy nước (→ COMPLETED)
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Chi tiết đơn */}
       <div className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 shadow-sm space-y-3.5">
@@ -204,6 +321,13 @@ function ConfirmationContent() {
           </div>
         </div>
 
+        {order.discount && order.discount > 0 && (
+          <div className="flex justify-between items-center pt-2 text-xs text-emerald-700 font-bold">
+            <span>Giảm giá ({order.voucherCode || 'Voucher'}):</span>
+            <span>-{order.discount.toLocaleString('vi-VN')} đ</span>
+          </div>
+        )}
+
         <div className="pt-3 border-t border-stone-200 flex justify-between items-center">
           <span className="font-bold text-stone-900">Tổng thanh toán:</span>
           <span className="text-2xl font-black text-amber-900">
@@ -213,7 +337,7 @@ function ConfirmationContent() {
       </div>
 
       {/* Thông báo quầy / Hướng dẫn */}
-      {isPaid ? (
+      {isSuccessFlow ? (
         <div className="mt-5 rounded-xl bg-amber-50 p-4 border border-amber-200 text-center">
           <p className="font-bold text-amber-950 text-sm">
             ☕ Mời quý khách tới quầy nhận đồ uống khi hiển thị mã #{order.id}
