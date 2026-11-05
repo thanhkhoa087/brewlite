@@ -291,13 +291,22 @@ export default function OrdersHistoryPage() {
                   >
                     Xem chi tiết
                   </Link>
-                  {o.status !== 'PAID' && (
+                  {o.status === 'PAYMENT_FAILED' && (
+                    <button
+                      onClick={() => handleRetryPayment(o.id)}
+                      disabled={payingOrderId === o.id}
+                      className="rounded-xl bg-rose-700 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-rose-800 transition active:scale-[0.99] disabled:opacity-50"
+                    >
+                      {payingOrderId === o.id ? 'Đang xử lý...' : 'Thanh toán lại'}
+                    </button>
+                  )}
+                  {o.status === 'PENDING' && (
                     <button
                       onClick={() => handleRetryPayment(o.id)}
                       disabled={payingOrderId === o.id}
                       className="rounded-xl bg-amber-900 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-amber-800 transition active:scale-[0.99] disabled:opacity-50"
                     >
-                      {payingOrderId === o.id ? 'Đang xử lý...' : 'Thanh toán lại'}
+                      {payingOrderId === o.id ? 'Đang xử lý...' : 'Thanh toán ngay'}
                     </button>
                   )}
                 </div>
