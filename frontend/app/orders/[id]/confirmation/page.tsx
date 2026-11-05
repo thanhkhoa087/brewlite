@@ -216,33 +216,72 @@ function ConfirmationContent() {
           <p className="text-xs font-bold uppercase tracking-wider text-stone-600 mb-3 text-center">
             Quy trình phục vụ (Order State Machine)
           </p>
-          <div className="flex items-center justify-between relative px-2">
-            {steps.map((st, i) => {
-              const done = i <= stepIdx;
-              const active = i === stepIdx;
-              return (
-                <div key={st.key} className="flex flex-col items-center z-10">
-                  <div
-                    className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold transition ${
-                      active
-                        ? 'bg-amber-900 text-white ring-4 ring-amber-100'
-                        : done
+          <div className="relative px-2">
+            {/* Thanh nối tiến trình giữa các bước */}
+            <div className="absolute left-6 right-6 top-3.5 -translate-y-1/2 h-1 bg-stone-200 z-0 rounded-full" />
+            <div
+              className="absolute left-6 top-3.5 -translate-y-1/2 h-1 bg-emerald-600 z-0 rounded-full transition-all duration-500"
+              style={{
+                width:
+                  order.status === 'COMPLETED'
+                    ? 'calc(100% - 3rem)'
+                    : order.status === 'READY'
+                      ? '72%'
+                      : order.status === 'PREPARING'
+                        ? '48%'
+                        : order.status === 'PAID'
+                          ? '25%'
+                          : '0%',
+              }}
+            />
+
+            <div className="flex items-center justify-between relative z-10">
+              {steps.map((st, i) => {
+                const isDone =
+                  i === 0 ||
+                  (i === 1 && ['PAID', 'PREPARING', 'READY', 'COMPLETED'].includes(order.status)) ||
+                  (i === 2 && ['READY', 'COMPLETED'].includes(order.status)) ||
+                  (i === 3 && order.status === 'COMPLETED') ||
+                  (i === 4 && order.status === 'COMPLETED');
+
+                const isActive =
+                  !isDone &&
+                  ((i === 1 && order.status === 'PENDING') ||
+                    (i === 2 && (order.status === 'PAID' || order.status === 'PREPARING')) ||
+                    (i === 3 && order.status === 'READY'));
+
+                return (
+                  <div key={st.key} className="flex flex-col items-center">
+                    <div
+                      className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold transition shadow-sm ${
+                        isDone
                           ? 'bg-emerald-600 text-white'
-                          : 'bg-stone-200 text-stone-500'
-                    }`}
-                  >
-                    {done && !active ? '✓' : i + 1}
+                          : isActive
+                            ? i === 2 && order.status === 'PREPARING'
+                              ? 'bg-blue-600 text-white ring-4 ring-blue-100 animate-pulse'
+                              : i === 3
+                                ? 'bg-cyan-600 text-white ring-4 ring-cyan-100'
+                                : 'bg-amber-900 text-white ring-4 ring-amber-100'
+                            : 'bg-stone-200 text-stone-500'
+                      }`}
+                    >
+                      {isDone ? '✓' : i + 1}
+                    </div>
+                    <span
+                      className={`text-[10px] mt-1 font-semibold ${
+                        isDone
+                          ? 'text-emerald-700 font-bold'
+                          : isActive
+                            ? 'text-amber-900 font-bold'
+                            : 'text-stone-400'
+                      }`}
+                    >
+                      {st.label}
+                    </span>
                   </div>
-                  <span
-                    className={`text-[10px] mt-1 font-semibold ${
-                      active ? 'text-amber-900 font-bold' : done ? 'text-stone-700' : 'text-stone-400'
-                    }`}
-                  >
-                    {st.label}
-                  </span>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
 
           {/* Nút mô phỏng Barista chuyển trạng thái cho buổi Demo */}
