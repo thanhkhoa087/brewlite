@@ -172,11 +172,12 @@ export default function OrdersHistoryPage() {
           ← Quay lại menu chính
         </Link>
         <div className="flex items-center gap-3">
-          {email && (
-            <span className="text-xs text-stone-500 hidden sm:inline">
-              Tài khoản: <strong className="text-stone-800">{email}</strong>
-            </span>
-          )}
+          <Link
+            href="/barista"
+            className="text-xs font-semibold text-stone-600 bg-stone-100 px-2.5 py-1 rounded-lg border border-stone-200 hover:bg-stone-200 transition"
+          >
+            🧑‍🍳 KDS Barista
+          </Link>
           <Link
             href="/cart"
             className="inline-flex items-center gap-1 text-sm font-bold text-amber-900 hover:underline"

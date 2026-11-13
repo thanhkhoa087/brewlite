@@ -88,6 +88,15 @@ export default function MenuPage() {
           )}
 
           <Link
+            href="/barista"
+            className="hidden sm:flex items-center gap-1.5 rounded-full border border-stone-300 bg-stone-100 px-3.5 py-2 text-xs font-bold text-stone-700 hover:bg-stone-200 transition"
+            title="Màn hình quầy pha chế Barista Kitchen Display System"
+          >
+            <span>🧑‍🍳</span>
+            <span>Quầy Barista (KDS)</span>
+          </Link>
+
+          <Link
             href="/cart"
             className="flex items-center gap-2 rounded-full bg-amber-900 px-5 py-2 text-sm font-bold text-white shadow hover:bg-amber-800 transition"
           >

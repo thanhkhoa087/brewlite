@@ -34,7 +34,12 @@ export class OrdersController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateOrderStatusDto,
   ) {
-    return this.orders.updateStatus(id, dto.status, req.user.userId);
+    return this.orders.updateStatus(id, dto.status, req.user.userId, true);
+  }
+
+  @Get('barista/queue')
+  getBaristaQueue() {
+    return this.orders.findActiveOrders();
   }
 
   @Get('me')

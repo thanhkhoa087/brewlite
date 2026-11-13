@@ -31,8 +31,8 @@ function ConfirmationContent() {
 
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [updatingStatus, setUpdatingStatus] = useState(false);
   const [error, setError] = useState('');
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   useEffect(() => {
     if (!token) {
@@ -42,47 +42,48 @@ function ConfirmationContent() {
 
     if (!id) return;
 
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then(async (res) => {
+    let isMounted = true;
+
+    const fetchOrder = async (isInitial = false) => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
           throw new Error(data.message || 'Không tìm thấy thông tin đơn hàng');
         }
-        return res.json();
-      })
-      .then((data) => setOrder(data))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [id, token, router]);
-
-  // Task 10: Chuyển đổi trạng thái mô phỏng Barista/Admin
-  async function handleAdvanceStatus(nextStatus: string) {
-    if (!token || !order) return;
-    setUpdatingStatus(true);
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/${order.id}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status: nextStatus }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || 'Lỗi khi cập nhật trạng thái');
+        const data = await res.json();
+        if (isMounted) {
+          setOrder(data);
+          setError('');
+          setLastUpdated(new Date());
+        }
+      } catch (err: any) {
+        if (isMounted && isInitial) {
+          setError(err.message);
+        }
+      } finally {
+        if (isMounted && isInitial) {
+          setLoading(false);
+        }
       }
-      setOrder((prev) => (prev ? { ...prev, status: nextStatus } : prev));
-    } catch (err) {
-      alert((err as Error).message);
-    } finally {
-      setUpdatingStatus(false);
-    }
-  }
+    };
+
+    fetchOrder(true);
+
+    // Chuẩn nghiệp vụ: Tự động đồng bộ trạng thái đơn hàng thời gian thực mỗi 3 giây
+    const interval = setInterval(() => {
+      fetchOrder(false);
+    }, 3000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [id, token, router]);
 
   function getStatusBadge(status: string) {
     switch (status) {
@@ -284,35 +285,79 @@ function ConfirmationContent() {
             </div>
           </div>
 
-          {/* Nút mô phỏng Barista chuyển trạng thái cho buổi Demo */}
-          <div className="mt-4 border-t border-stone-100 pt-3 flex flex-wrap gap-2 justify-center">
-            {order.status === 'PAID' && (
-              <button
-                onClick={() => handleAdvanceStatus('PREPARING')}
-                disabled={updatingStatus}
-                className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700 transition"
-              >
-                ☕ Barista bắt đầu pha chế (→ PREPARING)
-              </button>
-            )}
-            {order.status === 'PREPARING' && (
-              <button
-                onClick={() => handleAdvanceStatus('READY')}
-                disabled={updatingStatus}
-                className="rounded-lg bg-cyan-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-cyan-700 transition"
-              >
-                🔔 Pha xong, mời nhận món (→ READY)
-              </button>
-            )}
-            {order.status === 'READY' && (
-              <button
-                onClick={() => handleAdvanceStatus('COMPLETED')}
-                disabled={updatingStatus}
-                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 transition"
-              >
-                🎉 Khách đã lấy nước (→ COMPLETED)
-              </button>
-            )}
+          {/* Thông báo trạng thái thời gian thực */}
+          <div className="mt-4 border-t border-stone-100 pt-3">
+            <div className="flex items-center justify-between text-[11px] text-stone-500 mb-2">
+              <span className="flex items-center gap-1.5 font-medium">
+                <span className="relative flex h-2 w-2">
+                  {['PAID', 'PREPARING', 'READY'].includes(order.status) && (
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  )}
+                  <span
+                    className={`relative inline-flex rounded-full h-2 w-2 ${
+                      order.status === 'COMPLETED' ? 'bg-stone-400' : 'bg-emerald-500'
+                    }`}
+                  ></span>
+                </span>
+                {order.status === 'COMPLETED'
+                  ? 'Đã hoàn tất đơn'
+                  : 'Cập nhật trực tiếp từ quầy pha chế'}
+              </span>
+              <span className="text-stone-400">
+                {lastUpdated.toLocaleTimeString('vi-VN', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                })}
+              </span>
+            </div>
+
+            {/* Thông điệp hướng dẫn tương ứng với trạng thái */}
+            <div
+              className={`p-3 rounded-xl border text-xs leading-relaxed ${
+                order.status === 'PAID'
+                  ? 'bg-amber-50/70 border-amber-200/80 text-amber-900'
+                  : order.status === 'PREPARING'
+                    ? 'bg-blue-50/70 border-blue-200/80 text-blue-900'
+                    : order.status === 'READY'
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-900 shadow-sm'
+                      : 'bg-stone-50 border-stone-200 text-stone-700'
+              }`}
+            >
+              {order.status === 'PAID' && (
+                <p className="flex items-start gap-2">
+                  <span className="text-base">⏳</span>
+                  <span>
+                    <strong>Đã tiếp nhận đơn:</strong> Đơn hàng đã ghi nhận vào hàng đợi của Barista. Vui lòng thư giãn tại bàn.
+                  </span>
+                </p>
+              )}
+              {order.status === 'PREPARING' && (
+                <p className="flex items-start gap-2">
+                  <span className="text-base">☕</span>
+                  <span>
+                    <strong>Đang pha chế:</strong> Barista đang thực hiện thức uống của bạn theo đúng công thức chuẩn vị.
+                  </span>
+                </p>
+              )}
+              {order.status === 'READY' && (
+                <p className="flex items-start gap-2">
+                  <span className="text-base">🔔</span>
+                  <span>
+                    <strong>Đồ uống đã sẵn sàng!</strong> Mời bạn đến quầy xuất trình mã đơn{' '}
+                    <strong>#{order.id}</strong> để nhận món.
+                  </span>
+                </p>
+              )}
+              {order.status === 'COMPLETED' && (
+                <p className="flex items-start gap-2">
+                  <span className="text-base">🎉</span>
+                  <span>
+                    <strong>Đã nhận món thành công:</strong> Cảm ơn bạn đã lựa chọn BrewLite. Chúc bạn một ngày tràn đầy năng lượng!
+                  </span>
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}

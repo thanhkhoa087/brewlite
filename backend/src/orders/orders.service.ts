@@ -197,7 +197,7 @@ export class OrdersService {
    * Cập nhật trạng thái đơn hàng tuân theo Order State Machine
    * Chặn đứng mọi bước chuyển trạng thái không hợp lệ qua assertTransition()
    */
-  async updateStatus(orderId: number, nextStatus: string, userId?: number) {
+  async updateStatus(orderId: number, nextStatus: string, userId?: number, isBarista = false) {
     let currentStatus = 'PENDING';
     let currentOrder: any = null;
 
@@ -214,7 +214,7 @@ export class OrdersService {
       throw new NotFoundException(`Đơn hàng #${orderId} không tồn tại`);
     }
 
-    if (userId && currentOrder.userId !== userId) {
+    if (userId && !isBarista && currentOrder.userId !== userId) {
       throw new ForbiddenException('Bạn không có quyền cập nhật đơn hàng này');
     }
 
@@ -233,6 +233,28 @@ export class OrdersService {
 
     currentOrder.status = nextStatus;
     return currentOrder;
+  }
+
+  async findActiveOrders() {
+    if (this.prisma.isConnected) {
+      try {
+        return await this.prisma.order.findMany({
+          where: {
+            status: { in: ['PAID', 'PREPARING', 'READY'] },
+          },
+          include: {
+            items: true,
+            user: { select: { email: true } },
+          },
+          orderBy: { createdAt: 'asc' },
+        });
+      } catch {
+        // Fallback
+      }
+    }
+    return MEMORY_ORDERS.filter((o) =>
+      ['PAID', 'PREPARING', 'READY'].includes(o.status),
+    );
   }
 
   async findByUser(userId: number) {
