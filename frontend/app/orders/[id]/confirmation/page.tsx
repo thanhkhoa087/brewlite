@@ -284,10 +284,7 @@ function ConfirmationContent() {
             <h1 className="mt-4 text-2xl font-black text-rose-700">
               Thanh toán thất bại
             </h1>
-            <p className="text-sm font-bold text-stone-900 mt-2">
-              Vui lòng thanh toán lại ở trang lịch sử đơn hàng
-            </p>
-            <p className="text-xs text-stone-500 mt-1">
+            <p className="text-sm text-stone-600 mt-2">
               Giao dịch thanh toán cho đơn hàng #{order.id} chưa thành công.
             </p>
           </>
@@ -485,12 +482,12 @@ function ConfirmationContent() {
           </div>
         </div>
 
-        {order.discount && order.discount > 0 && (
+        {typeof order.discount === 'number' && order.discount > 0 ? (
           <div className="flex justify-between items-center pt-2 text-xs text-emerald-700 font-bold">
             <span>Giảm giá ({order.voucherCode || 'Voucher'}):</span>
             <span>-{order.discount.toLocaleString('vi-VN')} đ</span>
           </div>
-        )}
+        ) : null}
 
         <div className="pt-3 border-t border-stone-200 flex justify-between items-center">
           <span className="font-bold text-stone-900">Tổng thanh toán:</span>
@@ -521,8 +518,8 @@ function ConfirmationContent() {
           <p className="font-bold text-rose-900 text-sm">
             ⚠️ Thanh toán không thành công
           </p>
-          <p className="text-xs font-bold text-rose-700 mt-1">
-            Vui lòng thanh toán lại ở trang lịch sử đơn hàng
+          <p className="text-xs text-rose-700 mt-1">
+            Giao dịch thanh toán chưa hoàn tất. Bạn có thể kiểm tra lại thông tin đơn hàng.
           </p>
         </div>
       )}

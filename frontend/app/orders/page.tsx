@@ -328,21 +328,6 @@ export default function OrdersHistoryPage() {
                 </span>
 
                 <div className="flex items-center gap-2">
-                  <Link
-                    href={`/orders/${o.id}/confirmation`}
-                    className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-bold text-stone-700 shadow-sm hover:bg-stone-100 transition"
-                  >
-                    Xem chi tiết
-                  </Link>
-                  {o.status === 'PAYMENT_FAILED' && (
-                    <button
-                      onClick={() => handleRetryPayment(o.id)}
-                      disabled={payingOrderId === o.id || cancellingOrderId === o.id}
-                      className="rounded-xl bg-rose-700 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-rose-800 transition active:scale-[0.99] disabled:opacity-50"
-                    >
-                      {payingOrderId === o.id ? 'Đang xử lý...' : 'Thanh toán lại'}
-                    </button>
-                  )}
                   {o.status === 'PENDING' && (
                     <button
                       onClick={() => handleRetryPayment(o.id)}

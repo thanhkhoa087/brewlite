@@ -404,7 +404,7 @@ export default function CartPage() {
             <p>{error}</p>
             <div className="mt-2 pt-2 border-t border-red-200/60">
               <Link href="/orders" className="font-bold text-amber-900 hover:underline">
-                → Đi đến lịch sử đơn hàng để xem chi tiết hoặc thanh toán lại
+                → Đi đến lịch sử đơn hàng
               </Link>
             </div>
           </div>
