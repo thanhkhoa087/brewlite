@@ -1,10 +1,10 @@
-# ☕ BrewLite - Cashless Coffee Ordering System
+## BrewLite - Cashless Coffee Ordering System
 
 Hệ thống đặt đồ uống và thanh toán không dùng tiền mặt (NestJS + Next.js + PostgreSQL).
 
 ---
 
-## ⚙️ Yêu cầu môi trường (Prerequisites)
+## Yêu cầu môi trường (Prerequisites)
 
 - **Node.js**: v20 trở lên (khuyến nghị v22 hoặc v24)
 - **Docker & Docker Compose** (để chạy database hoặc chạy toàn bộ hệ thống)
@@ -12,7 +12,7 @@ Hệ thống đặt đồ uống và thanh toán không dùng tiền mặt (Nest
 
 ---
 
-## 🚀 Hướng dẫn Cài đặt & Khởi chạy
+## Hướng dẫn Cài đặt & Khởi chạy
 
 ### Cách 1: Khởi chạy nhanh bằng Docker Compose (Khuyến nghị)
 
@@ -63,7 +63,7 @@ npm run dev
 
 ---
 
-## 🧪 Chạy Kiểm thử Tự động (Unit Tests)
+## Chạy Kiểm thử Tự động (Unit Tests)
 
 Chạy bộ kiểm thử Jest kiểm tra toàn bộ luồng máy trạng thái, kiểm soát tương tranh và chống trùng lặp giao dịch:
 
@@ -74,7 +74,7 @@ npm test
 
 ---
 
-## 📡 Danh mục Endpoint API chính
+## Danh mục Endpoint API chính
 
 | Phương thức | Endpoint | Chức năng | Xác thực JWT |
 |:---:|:---|:---|:---:|
@@ -89,14 +89,3 @@ npm test
 | `PATCH` | `/orders/:id/status` | Cập nhật trạng thái đơn (Barista KDS) | **Có** |
 | `GET` | `/orders/barista/queue` | Lấy hàng đợi quầy pha chế KDS | **Có** |
 | `POST` | `/payments` | Thanh toán đơn hàng không tiền mặt | **Có** |
-
----
-
-## 🔑 Dữ liệu Mẫu để Kiểm thử
-
-- **Tài khoản Khách hàng:** `user@brewlite.vn` / Mật khẩu: `123456`
-- **Tài khoản Barista:** `barista@brewlite.vn` / Mật khẩu: `123456`
-- **Mã Voucher giảm giá:**
-  - `GIAM10`: Giảm 10% tổng đơn hàng
-  - `BREW20`: Giảm 20.000 đ cho đơn từ 40.000 đ
-  - `WELCOME`: Giảm 15.000 đ cho khách mới
