@@ -147,11 +147,15 @@ export class PaymentsService {
 
         let totalLoyalty = 0;
         if (earnedPoints > 0) {
-          const updatedUser = await tx.user.update({
-            where: { id: userId },
-            data: { loyaltyPoints: { increment: earnedPoints } },
-          });
-          totalLoyalty = updatedUser.loyaltyPoints;
+          try {
+            const updatedUser = await tx.user.update({
+              where: { id: userId },
+              data: { loyaltyPoints: { increment: earnedPoints } },
+            });
+            totalLoyalty = updatedUser.loyaltyPoints;
+          } catch (userErr) {
+            console.warn(`[PaymentsService] Không thể cập nhật điểm cho user #${userId}:`, userErr);
+          }
         }
 
         return {

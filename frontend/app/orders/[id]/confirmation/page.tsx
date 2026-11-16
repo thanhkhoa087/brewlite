@@ -113,16 +113,19 @@ function ConfirmationContent() {
     if (!order || !token) return;
     setRetrying(true);
     try {
+      const retryKey = `retry_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
+          'idempotency-key': retryKey,
         },
         body: JSON.stringify({
           orderId: order.id,
           method: 'WALLET',
           simulateFailure: false,
+          idempotencyKey: retryKey,
         }),
       });
       const data = await res.json();
