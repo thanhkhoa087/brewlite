@@ -80,11 +80,15 @@ export default function OrdersHistoryPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Thanh toán thất bại');
 
-      setToast({
-        type: 'success',
-        message: `Thanh toán lại cho đơn #${orderId} thành công! Trạng thái đã chuyển sang PAID.`,
-      });
-      fetchOrders();
+      if (data.status === 'PAID' || data.success) {
+        router.push(`/orders/${orderId}/confirmation`);
+      } else {
+        setToast({
+          type: 'error',
+          message: 'Thanh toán lại không thành công. Vui lòng thử lại.',
+        });
+        fetchOrders();
+      }
     } catch (err) {
       setToast({
         type: 'error',

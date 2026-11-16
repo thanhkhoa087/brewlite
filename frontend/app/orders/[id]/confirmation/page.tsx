@@ -34,6 +34,7 @@ function ConfirmationContent() {
   const [error, setError] = useState('');
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [cancelling, setCancelling] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -105,6 +106,45 @@ function ConfirmationContent() {
       alert(err.message);
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const handleRetryPayment = async () => {
+    if (!order || !token) return;
+    setRetrying(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          orderId: order.id,
+          method: 'WALLET',
+          simulateFailure: false,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Thanh toán thất bại');
+      if (data.status === 'PAID' || data.success) {
+        if (data.order) {
+          setOrder(data.order);
+        } else {
+          const ordRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/${order.id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (ordRes.ok) {
+            setOrder(await ordRes.json());
+          }
+        }
+      } else {
+        alert('Thanh toán chưa thành công, vui lòng thử lại.');
+      }
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setRetrying(false);
     }
   };
 
@@ -201,7 +241,6 @@ function ConfirmationContent() {
     { key: 'READY', label: 'Sẵn sàng' },
     { key: 'COMPLETED', label: 'Nhận món' },
   ];
-  const stepIdx = steps.findIndex((s) => s.key === order.status);
 
   return (
     <main className="mx-auto max-w-md p-4">
@@ -209,14 +248,17 @@ function ConfirmationContent() {
       <div className="text-center py-6">
         {isSuccessFlow ? (
           <>
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 text-3xl font-black shadow-sm">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 text-3xl font-black shadow-sm ring-8 ring-emerald-50">
               ✓
             </div>
             <h1 className="mt-4 text-2xl font-black text-stone-900">
-              {order.status === 'COMPLETED' ? 'Đơn hàng hoàn tất!' : 'Đặt hàng thành công!'}
+              Thanh toán thành công!
             </h1>
+            <p className="text-sm font-bold text-amber-900 mt-2">
+              Cảm ơn bạn đã sử dụng dịch vụ BrewLite!
+            </p>
             <p className="text-xs text-stone-500 mt-1">
-              Cảm ơn bạn đã sử dụng phương thức thanh toán không tiền mặt BrewLite.
+              Đơn hàng #{order.id} của bạn đã được ghi nhận và gửi đến quầy pha chế.
             </p>
           </>
         ) : order.status === 'CANCELLED' ? (
@@ -233,27 +275,29 @@ function ConfirmationContent() {
           </>
         ) : (
           <>
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-rose-100 text-rose-700 text-3xl font-black shadow-sm">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-rose-100 text-rose-700 text-3xl font-black shadow-sm ring-8 ring-rose-50">
               ✕
             </div>
-            <h1 className="mt-4 text-2xl font-black text-stone-900">
-              Thanh toán chưa hoàn tất
+            <h1 className="mt-4 text-2xl font-black text-rose-700">
+              Thanh toán thất bại
             </h1>
+            <p className="text-sm font-bold text-stone-900 mt-2">
+              Vui lòng thanh toán lại ở trang lịch sử đơn hàng
+            </p>
             <p className="text-xs text-stone-500 mt-1">
-              Đơn hàng chưa được thanh toán thành công ({order.status})
+              Giao dịch thanh toán cho đơn hàng #{order.id} chưa thành công.
             </p>
           </>
         )}
       </div>
 
-      {/* Sơ đồ tiến trình Order State Machine (Task 10) */}
+      {/* Sơ đồ tiến trình Order State Machine */}
       {isSuccessFlow && (
         <div className="mb-4 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
           <p className="text-xs font-bold uppercase tracking-wider text-stone-600 mb-3 text-center">
             Quy trình phục vụ (Order State Machine)
           </p>
           <div className="relative px-2">
-            {/* Thanh nối tiến trình giữa các bước */}
             <div className="absolute left-6 right-6 top-3.5 -translate-y-1/2 h-1 bg-stone-200 z-0 rounded-full" />
             <div
               className="absolute left-6 top-3.5 -translate-y-1/2 h-1 bg-emerald-600 z-0 rounded-full transition-all duration-500"
@@ -320,7 +364,6 @@ function ConfirmationContent() {
             </div>
           </div>
 
-          {/* Thông báo trạng thái thời gian thực */}
           <div className="mt-4 border-t border-stone-100 pt-3">
             <div className="flex items-center justify-between text-[11px] text-stone-500 mb-2">
               <span className="flex items-center gap-1.5 font-medium">
@@ -347,7 +390,6 @@ function ConfirmationContent() {
               </span>
             </div>
 
-            {/* Thông điệp hướng dẫn tương ứng với trạng thái */}
             <div
               className={`p-3 rounded-xl border text-xs leading-relaxed ${
                 order.status === 'PAID'
@@ -457,52 +499,90 @@ function ConfirmationContent() {
 
       {/* Thông báo quầy / Hướng dẫn */}
       {isSuccessFlow ? (
-        <div className="mt-5 rounded-xl bg-amber-50 p-4 border border-amber-200 text-center">
+        <div className="mt-5 rounded-2xl bg-amber-50 p-4 border border-amber-200 text-center">
           <p className="font-bold text-amber-950 text-sm">
-            ☕ Mời quý khách tới quầy nhận đồ uống khi hiển thị mã #{order.id}
+            ☕ Cảm ơn bạn đã sử dụng dịch vụ BrewLite!
+          </p>
+          <p className="text-xs text-amber-900/80 mt-1">
+            Mời quý khách tới quầy nhận đồ uống khi hiển thị mã #{order.id}
           </p>
         </div>
       ) : order.status === 'CANCELLED' ? (
-        <div className="mt-5 rounded-xl bg-stone-100 p-4 border border-stone-300 text-center">
+        <div className="mt-5 rounded-2xl bg-stone-100 p-4 border border-stone-300 text-center">
           <p className="font-bold text-stone-800 text-sm">
             🚫 Đơn hàng này đã được hủy. Nếu bạn đã thanh toán, hệ thống sẽ hoàn tiền cho bạn theo quy định.
           </p>
         </div>
       ) : (
-        <div className="mt-5 rounded-xl bg-rose-50 p-4 border border-rose-200 text-center">
+        <div className="mt-5 rounded-2xl bg-rose-50 p-4 border border-rose-200 text-center">
           <p className="font-bold text-rose-900 text-sm">
-            ⚠️ Đơn hàng chưa hoàn tất thanh toán. Vui lòng thử thanh toán lại trong Lịch sử đơn hàng.
+            ⚠️ Thanh toán không thành công
           </p>
+          <p className="text-xs font-bold text-rose-700 mt-1">
+            Vui lòng thanh toán lại ở trang lịch sử đơn hàng
+          </p>
+        </div>
+      )}
+
+      {/* Nút thanh toán lại nhanh nếu thanh toán thất bại */}
+      {order.status === 'PAYMENT_FAILED' && (
+        <div className="mt-4">
+          <button
+            onClick={handleRetryPayment}
+            disabled={retrying || cancelling}
+            className="w-full text-center rounded-xl bg-rose-700 py-3.5 text-sm font-bold text-white shadow-md hover:bg-rose-800 transition active:scale-[0.99] disabled:opacity-50"
+          >
+            {retrying ? 'Đang thực hiện thanh toán lại...' : '💳 Thử thanh toán lại ngay'}
+          </button>
         </div>
       )}
 
       {/* Nút hủy đơn nếu trạng thái cho phép */}
       {['PENDING', 'PAYMENT_FAILED', 'PAID'].includes(order.status) && (
-        <div className="mt-4">
+        <div className="mt-3">
           <button
             onClick={handleCancelOrder}
-            disabled={cancelling}
-            className="w-full text-center rounded-xl border border-rose-300 bg-rose-50/80 py-3 text-xs font-bold text-rose-700 hover:bg-rose-100 transition active:scale-[0.99] disabled:opacity-50"
+            disabled={cancelling || retrying}
+            className="w-full text-center rounded-xl border border-rose-300 bg-rose-50/80 py-2.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition active:scale-[0.99] disabled:opacity-50"
           >
             {cancelling ? 'Đang xử lý hủy đơn...' : '✕ Hủy đơn hàng này'}
           </button>
         </div>
       )}
 
-      {/* Nút điều hướng */}
+      {/* Nút điều hướng theo yêu cầu */}
       <div className="mt-6 flex flex-col gap-3">
-        <Link
-          href="/orders"
-          className="w-full text-center rounded-xl border border-stone-200 bg-white py-3.5 font-bold text-stone-800 shadow-sm hover:bg-stone-50 transition active:scale-[0.99]"
-        >
-          Xem lịch sử đơn hàng
-        </Link>
-        <Link
-          href="/"
-          className="w-full text-center rounded-xl bg-amber-900 py-3.5 font-bold text-white shadow-md hover:bg-amber-800 transition active:scale-[0.99]"
-        >
-          ← Tiếp tục khám phá menu
-        </Link>
+        {isSuccessFlow ? (
+          <>
+            <Link
+              href="/"
+              className="w-full text-center rounded-xl bg-amber-900 py-3.5 font-bold text-white shadow-md hover:bg-amber-800 transition active:scale-[0.99]"
+            >
+              ← Quay về menu chính
+            </Link>
+            <Link
+              href="/orders"
+              className="w-full text-center rounded-xl border border-stone-200 bg-white py-3.5 font-bold text-stone-800 shadow-sm hover:bg-stone-50 transition active:scale-[0.99]"
+            >
+              📋 Lịch sử đơn hàng
+            </Link>
+          </>
+        ) : (
+          <>
+            <Link
+              href="/orders"
+              className="w-full text-center rounded-xl bg-amber-900 py-3.5 font-bold text-white shadow-md hover:bg-amber-800 transition active:scale-[0.99]"
+            >
+              📋 Lịch sử đơn hàng
+            </Link>
+            <Link
+              href="/"
+              className="w-full text-center rounded-xl border border-stone-200 bg-white py-3.5 font-bold text-stone-800 shadow-sm hover:bg-stone-50 transition active:scale-[0.99]"
+            >
+              ← Quay về menu chính
+            </Link>
+          </>
+        )}
       </div>
     </main>
   );

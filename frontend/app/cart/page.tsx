@@ -135,8 +135,8 @@ export default function CartPage() {
         }),
       });
 
-      const payData = await payRes.json();
-      if (!payRes.ok) {
+      const payData = await payRes.json().catch(() => ({}));
+      if (!payRes.ok && payData.status !== 'PAYMENT_FAILED') {
         throw new Error(
           Array.isArray(payData.message)
             ? payData.message.join(', ')
@@ -144,16 +144,9 @@ export default function CartPage() {
         );
       }
 
-      if (payData.status === 'PAID' || payData.success) {
-        // Thành công: Xóa giỏ hàng và chuyển sang trang xác nhận đơn (Task 9)
-        clearCart();
-        router.push(`/orders/${orderData.id}/confirmation`);
-      } else {
-        // Thất bại: Đơn ở trạng thái PAYMENT_FAILED, giỏ hàng giữ nguyên
-        setError(
-          `Thanh toán không thành công! Đơn hàng #${orderData.id} chuyển sang trạng thái PAYMENT_FAILED. Bạn có thể thử thanh toán lại hoặc chọn phương thức khác.`,
-        );
-      }
+      // Xóa giỏ hàng và chuyển hướng tới màn hình kết quả thanh toán của đơn hàng
+      clearCart();
+      router.push(`/orders/${orderData.id}/confirmation`);
     } catch (err) {
       setError((err as Error).message);
     } finally {
