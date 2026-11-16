@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useCartStore } from '@/lib/cartStore';
 import { useAuthStore } from '@/lib/authStore';
 
@@ -24,8 +24,23 @@ export default function MenuPage() {
     s.items.reduce((sum, i) => sum + i.qty, 0),
   );
   const email = useAuthStore((s) => s.email);
+  const fullName = useAuthStore((s) => s.fullName);
   const logout = useAuthStore((s) => s.logout);
   const [products, setProducts] = useState<Product[]>(DEFAULT_PRODUCTS);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowUserDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`)
@@ -61,44 +76,85 @@ export default function MenuPage() {
 
         <div className="flex items-center gap-3">
           {email ? (
-            <div className="flex items-center gap-3 bg-stone-100 px-3 py-1.5 rounded-full text-stone-800 text-sm">
-              <span className="font-medium text-stone-700">{email}</span>
-              <span className="text-stone-300">|</span>
-              <Link
-                href="/orders"
-                className="font-semibold text-amber-900 hover:underline"
-              >
-                Đơn hàng
-              </Link>
-              <span className="text-stone-300">|</span>
+            <div className="relative" ref={dropdownRef}>
               <button
-                onClick={logout}
-                className="text-stone-500 hover:text-stone-800"
+                onClick={() => setShowUserDropdown(!showUserDropdown)}
+                className="flex items-center gap-2 rounded-full border border-stone-200 bg-white px-3.5 py-2 text-sm font-semibold text-stone-800 shadow-sm hover:bg-stone-50 transition active:scale-[0.99]"
               >
-                Đăng xuất
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-amber-900 text-xs font-bold">
+                  👤
+                </span>
+                <span className="text-stone-600 hidden sm:inline">
+                  Xin chào,{' '}
+                  <strong className="text-stone-900 font-bold">
+                    {fullName || email.split('@')[0]}
+                  </strong>
+                </span>
+                <span className="text-stone-900 font-bold sm:hidden">
+                  {fullName || email.split('@')[0]}
+                </span>
+                <svg
+                  className={`h-4 w-4 text-stone-400 transition-transform ${
+                    showUserDropdown ? 'rotate-180' : ''
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
               </button>
+
+              {showUserDropdown && (
+                <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-stone-200 bg-white py-2 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="px-4 py-2 border-b border-stone-100">
+                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+                      Tài khoản
+                    </p>
+                    <p className="text-sm font-bold text-stone-900 truncate">
+                      {fullName || email}
+                    </p>
+                    {email && <p className="text-xs text-stone-500 truncate">{email}</p>}
+                  </div>
+
+                  <div className="py-1">
+                    <Link
+                      href="/orders"
+                      onClick={() => setShowUserDropdown(false)}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-stone-700 hover:bg-amber-50 hover:text-amber-900 transition"
+                    >
+                      <span className="text-base">📋</span>
+                      <span>Đơn hàng của tôi</span>
+                    </Link>
+                  </div>
+
+                  <div className="border-t border-stone-100 pt-1">
+                    <button
+                      onClick={() => {
+                        setShowUserDropdown(false);
+                        logout();
+                      }}
+                      className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 transition"
+                    >
+                      <span className="text-base">🚪</span>
+                      <span>Đăng xuất</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <Link
               href="/login"
-              className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-800 hover:bg-stone-50 shadow-sm"
+              className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-800 hover:bg-stone-50 shadow-sm transition"
             >
               Đăng nhập / Đăng ký
             </Link>
           )}
 
           <Link
-            href="/barista"
-            className="hidden sm:flex items-center gap-1.5 rounded-full border border-stone-300 bg-stone-100 px-3.5 py-2 text-xs font-bold text-stone-700 hover:bg-stone-200 transition"
-            title="Màn hình quầy pha chế Barista Kitchen Display System"
-          >
-            <span>🧑‍🍳</span>
-            <span>Quầy Barista (KDS)</span>
-          </Link>
-
-          <Link
             href="/cart"
-            className="flex items-center gap-2 rounded-full bg-amber-900 px-5 py-2 text-sm font-bold text-white shadow hover:bg-amber-800 transition"
+            className="flex items-center gap-2 rounded-full bg-amber-900 px-5 py-2 text-sm font-bold text-white shadow hover:bg-amber-800 transition active:scale-[0.98] whitespace-nowrap"
           >
             <span>🛒 Giỏ hàng</span>
             {cartCount > 0 && (

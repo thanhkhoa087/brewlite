@@ -11,16 +11,18 @@ export default function LoginPage() {
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
   const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function post(path: string) {
+  async function post(path: string, payload: any) {
     const res = await fetch(`${API}${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -34,10 +36,28 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      if (mode === 'register') await post('/auth/register');
-      const data = await post('/auth/login');
-      setAuth(data.accessToken, email);
-      router.push('/cart');
+      if (mode === 'register') {
+        if (!fullName.trim()) {
+          throw new Error('Vui lòng nhập họ và tên');
+        }
+        if (!phone.trim()) {
+          throw new Error('Vui lòng nhập số điện thoại');
+        }
+        await post('/auth/register', {
+          email: email.trim(),
+          password,
+          fullName: fullName.trim(),
+          phone: phone.trim(),
+        });
+      }
+      const data = await post('/auth/login', { email: email.trim(), password });
+      setAuth(
+        data.accessToken,
+        email.trim(),
+        data.user?.fullName || fullName.trim(),
+        data.user?.phone || phone.trim(),
+      );
+      router.push('/');
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -65,9 +85,39 @@ export default function LoginPage() {
         </div>
 
         <div className="space-y-3.5">
+          {mode === 'register' && (
+            <>
+              <div>
+                <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-1">
+                  Họ và tên <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: Nguyễn Văn A"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-amber-900 focus:outline-none focus:ring-1 focus:ring-amber-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-1">
+                  Số điện thoại <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  placeholder="Ví dụ: 0901234567"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-amber-900 focus:outline-none focus:ring-1 focus:ring-amber-900"
+                />
+              </div>
+            </>
+          )}
+
           <div>
             <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-1">
-              Địa chỉ Email
+              Địa chỉ Email <span className="text-rose-500">*</span>
             </label>
             <input
               type="email"
@@ -80,7 +130,7 @@ export default function LoginPage() {
 
           <div>
             <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-1">
-              Mật khẩu
+              Mật khẩu <span className="text-rose-500">*</span>
             </label>
             <input
               type="password"

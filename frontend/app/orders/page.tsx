@@ -206,12 +206,6 @@ export default function OrdersHistoryPage() {
         </Link>
         <div className="flex items-center gap-3">
           <Link
-            href="/barista"
-            className="text-xs font-semibold text-stone-600 bg-stone-100 px-2.5 py-1 rounded-lg border border-stone-200 hover:bg-stone-200 transition"
-          >
-            🧑‍🍳 KDS Barista
-          </Link>
-          <Link
             href="/cart"
             className="inline-flex items-center gap-1 text-sm font-bold text-amber-900 hover:underline"
           >
