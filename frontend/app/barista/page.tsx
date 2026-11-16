@@ -379,6 +379,17 @@ export default function BaristaKdsPage() {
                         >
                           {updatingId === order.id ? 'Đang chuyển...' : '☕ Bắt đầu pha chế (PREPARING)'}
                         </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Bạn có chắc muốn hủy đơn #${order.id} (khách yêu cầu hủy)?`)) {
+                              handleUpdateStatus(order.id, 'CANCELLED');
+                            }
+                          }}
+                          disabled={updatingId === order.id}
+                          className="mt-2 w-full text-center text-[11px] font-semibold text-rose-400/80 hover:text-rose-300 py-0.5 transition"
+                        >
+                          ✕ Hủy đơn này
+                        </button>
                       </div>
                     ))
                   )}
@@ -453,6 +464,17 @@ export default function BaristaKdsPage() {
                           className="w-full rounded-lg bg-cyan-600 hover:bg-cyan-500 py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-md transition active:scale-[0.98] disabled:opacity-50"
                         >
                           {updatingId === order.id ? 'Đang chuyển...' : '🔔 Pha xong → Gọi khách (READY)'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Bạn có chắc muốn hủy đơn #${order.id} (hết nguyên liệu/sự cố)?`)) {
+                              handleUpdateStatus(order.id, 'CANCELLED');
+                            }
+                          }}
+                          disabled={updatingId === order.id}
+                          className="mt-2 w-full text-center text-[11px] font-semibold text-rose-400/80 hover:text-rose-300 py-0.5 transition"
+                        >
+                          ✕ Hủy đơn (Hết nguyên liệu / Sự cố)
                         </button>
                       </div>
                     ))

@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { MOCK_PRODUCTS } from '../products/products.service';
-import { assertTransition } from './order-state';
+import { assertTransition, OrderStatus } from './order-state';
 import { CreateOrderDto } from './orders.dto';
 import { applyVoucher } from './vouchers';
 
@@ -198,6 +198,10 @@ export class OrdersService {
    * Chặn đứng mọi bước chuyển trạng thái không hợp lệ qua assertTransition()
    */
   async updateStatus(orderId: number, nextStatus: string, userId?: number, isBarista = false) {
+    if (nextStatus === OrderStatus.CANCELLED) {
+      return this.cancelOrder(orderId, userId, isBarista);
+    }
+
     let currentStatus = 'PENDING';
     let currentOrder: any = null;
 
@@ -232,6 +236,92 @@ export class OrdersService {
     }
 
     currentOrder.status = nextStatus;
+    return currentOrder;
+  }
+
+  /**
+   * Hủy đơn hàng và hoàn trả tồn kho (Restock)
+   * - Khách hàng: chỉ được hủy khi PENDING, PAYMENT_FAILED, hoặc PAID
+   * - Barista: được hủy khi PENDING, PAYMENT_FAILED, PAID, hoặc PREPARING
+   */
+  async cancelOrder(
+    orderId: number,
+    userId?: number,
+    isBarista = false,
+    reason?: string,
+  ) {
+    let currentOrder: any = null;
+
+    if (this.prisma.isConnected) {
+      currentOrder = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        include: { items: true },
+      });
+    } else {
+      currentOrder = MEMORY_ORDERS.find((o) => o.id === orderId);
+    }
+
+    if (!currentOrder) {
+      throw new NotFoundException(`Đơn hàng #${orderId} không tồn tại`);
+    }
+
+    if (userId && !isBarista && currentOrder.userId !== userId) {
+      throw new ForbiddenException('Bạn không có quyền hủy đơn hàng này');
+    }
+
+    const currentStatus = currentOrder.status;
+
+    const cancellableStatuses = isBarista
+      ? ['PENDING', 'PAYMENT_FAILED', 'PAID', 'PREPARING']
+      : ['PENDING', 'PAYMENT_FAILED', 'PAID'];
+
+    if (!cancellableStatuses.includes(currentStatus)) {
+      if (['COMPLETED', 'CANCELLED'].includes(currentStatus)) {
+        throw new BadRequestException(
+          `Đơn hàng #${orderId} đã ở trạng thái kết thúc (${currentStatus}), không thể hủy`,
+        );
+      }
+      throw new BadRequestException(
+        'Không thể hủy đơn hàng khi quán đã bắt đầu pha chế hoặc đồ uống đã sẵn sàng. Vui lòng liên hệ quầy thu ngân.',
+      );
+    }
+
+    // Kiểm tra chuyển trạng thái hợp lệ qua State Machine
+    assertTransition(currentStatus, OrderStatus.CANCELLED);
+
+    // Hoàn trả tồn kho (Restock)
+    if (this.prisma.isConnected) {
+      return this.prisma.$transaction(async (tx) => {
+        for (const item of currentOrder.items) {
+          if (item.productId) {
+            await tx.product.updateMany({
+              where: { id: item.productId },
+              data: {
+                stock: { increment: item.qty },
+                version: { increment: 1 },
+              },
+            });
+          }
+        }
+
+        return tx.order.update({
+          where: { id: orderId },
+          data: { status: OrderStatus.CANCELLED },
+          include: { items: true },
+        });
+      });
+    }
+
+    // In-memory fallback
+    for (const item of currentOrder.items) {
+      const stockInfo = MEMORY_STOCK.get(item.productId);
+      if (stockInfo) {
+        stockInfo.stock += item.qty;
+        stockInfo.version += 1;
+        MEMORY_STOCK.set(item.productId, stockInfo);
+      }
+    }
+    currentOrder.status = OrderStatus.CANCELLED;
     return currentOrder;
   }
 

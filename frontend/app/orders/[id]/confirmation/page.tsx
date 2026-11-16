@@ -33,6 +33,7 @@ function ConfirmationContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -84,6 +85,28 @@ function ConfirmationContent() {
       clearInterval(interval);
     };
   }, [id, token, router]);
+
+  const handleCancelOrder = async () => {
+    if (!order || !token) return;
+    if (!confirm(`Bạn có chắc chắn muốn hủy đơn hàng #${order.id}?`)) return;
+    setCancelling(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/${order.id}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Hủy đơn hàng thất bại');
+      setOrder(data);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   function getStatusBadge(status: string) {
     switch (status) {
@@ -194,6 +217,18 @@ function ConfirmationContent() {
             </h1>
             <p className="text-xs text-stone-500 mt-1">
               Cảm ơn bạn đã sử dụng phương thức thanh toán không tiền mặt BrewLite.
+            </p>
+          </>
+        ) : order.status === 'CANCELLED' ? (
+          <>
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-stone-200 text-stone-700 text-3xl font-black shadow-sm">
+              ✕
+            </div>
+            <h1 className="mt-4 text-2xl font-black text-stone-900">
+              Đơn hàng đã được hủy
+            </h1>
+            <p className="text-xs text-stone-500 mt-1">
+              Đơn hàng #{order.id} đã hủy thành công. Sản phẩm đã được hoàn trả lại vào kho.
             </p>
           </>
         ) : (
@@ -427,11 +462,30 @@ function ConfirmationContent() {
             ☕ Mời quý khách tới quầy nhận đồ uống khi hiển thị mã #{order.id}
           </p>
         </div>
+      ) : order.status === 'CANCELLED' ? (
+        <div className="mt-5 rounded-xl bg-stone-100 p-4 border border-stone-300 text-center">
+          <p className="font-bold text-stone-800 text-sm">
+            🚫 Đơn hàng này đã được hủy. Nếu bạn đã thanh toán, hệ thống sẽ hoàn tiền cho bạn theo quy định.
+          </p>
+        </div>
       ) : (
         <div className="mt-5 rounded-xl bg-rose-50 p-4 border border-rose-200 text-center">
           <p className="font-bold text-rose-900 text-sm">
             ⚠️ Đơn hàng chưa hoàn tất thanh toán. Vui lòng thử thanh toán lại trong Lịch sử đơn hàng.
           </p>
+        </div>
+      )}
+
+      {/* Nút hủy đơn nếu trạng thái cho phép */}
+      {['PENDING', 'PAYMENT_FAILED', 'PAID'].includes(order.status) && (
+        <div className="mt-4">
+          <button
+            onClick={handleCancelOrder}
+            disabled={cancelling}
+            className="w-full text-center rounded-xl border border-rose-300 bg-rose-50/80 py-3 text-xs font-bold text-rose-700 hover:bg-rose-100 transition active:scale-[0.99] disabled:opacity-50"
+          >
+            {cancelling ? 'Đang xử lý hủy đơn...' : '✕ Hủy đơn hàng này'}
+          </button>
         </div>
       )}
 

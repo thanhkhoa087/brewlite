@@ -31,6 +31,7 @@ export default function OrdersHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [payingOrderId, setPayingOrderId] = useState<number | null>(null);
+  const [cancellingOrderId, setCancellingOrderId] = useState<number | null>(null);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
@@ -91,6 +92,38 @@ export default function OrdersHistoryPage() {
       });
     } finally {
       setPayingOrderId(null);
+    }
+  }
+
+  async function handleCancelOrder(orderId: number) {
+    if (!confirm(`Bạn có chắc chắn muốn hủy đơn hàng #${orderId} không?`)) {
+      return;
+    }
+    setCancellingOrderId(orderId);
+    setToast(null);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/${orderId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Hủy đơn hàng thất bại');
+
+      setToast({
+        type: 'success',
+        message: `Đơn hàng #${orderId} đã được hủy thành công! Sản phẩm đã được hoàn lại về kho.`,
+      });
+      fetchOrders();
+    } catch (err) {
+      setToast({
+        type: 'error',
+        message: (err as Error).message,
+      });
+    } finally {
+      setCancellingOrderId(null);
     }
   }
 
@@ -288,15 +321,15 @@ export default function OrdersHistoryPage() {
                 <div className="flex items-center gap-2">
                   <Link
                     href={`/orders/${o.id}/confirmation`}
-                    className="rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-1.5 text-xs font-bold text-stone-700 shadow-sm hover:bg-stone-100 transition"
+                    className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-bold text-stone-700 shadow-sm hover:bg-stone-100 transition"
                   >
                     Xem chi tiết
                   </Link>
                   {o.status === 'PAYMENT_FAILED' && (
                     <button
                       onClick={() => handleRetryPayment(o.id)}
-                      disabled={payingOrderId === o.id}
-                      className="rounded-xl bg-rose-700 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-rose-800 transition active:scale-[0.99] disabled:opacity-50"
+                      disabled={payingOrderId === o.id || cancellingOrderId === o.id}
+                      className="rounded-xl bg-rose-700 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-rose-800 transition active:scale-[0.99] disabled:opacity-50"
                     >
                       {payingOrderId === o.id ? 'Đang xử lý...' : 'Thanh toán lại'}
                     </button>
@@ -304,10 +337,19 @@ export default function OrdersHistoryPage() {
                   {o.status === 'PENDING' && (
                     <button
                       onClick={() => handleRetryPayment(o.id)}
-                      disabled={payingOrderId === o.id}
-                      className="rounded-xl bg-amber-900 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-amber-800 transition active:scale-[0.99] disabled:opacity-50"
+                      disabled={payingOrderId === o.id || cancellingOrderId === o.id}
+                      className="rounded-xl bg-amber-900 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-amber-800 transition active:scale-[0.99] disabled:opacity-50"
                     >
                       {payingOrderId === o.id ? 'Đang xử lý...' : 'Thanh toán ngay'}
+                    </button>
+                  )}
+                  {['PENDING', 'PAYMENT_FAILED', 'PAID'].includes(o.status) && (
+                    <button
+                      onClick={() => handleCancelOrder(o.id)}
+                      disabled={cancellingOrderId === o.id || payingOrderId === o.id}
+                      className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 shadow-sm hover:bg-rose-100 hover:border-rose-300 transition active:scale-[0.99] disabled:opacity-50"
+                    >
+                      {cancellingOrderId === o.id ? 'Đang hủy...' : 'Hủy đơn'}
                     </button>
                   )}
                 </div>

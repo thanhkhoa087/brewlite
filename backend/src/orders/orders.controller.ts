@@ -11,7 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CreateOrderDto, UpdateOrderStatusDto } from './orders.dto';
+import { CreateOrderDto, UpdateOrderStatusDto, CancelOrderDto } from './orders.dto';
 import { OrdersService } from './orders.service';
 
 @UseGuards(JwtAuthGuard)
@@ -35,6 +35,15 @@ export class OrdersController {
     @Body() dto: UpdateOrderStatusDto,
   ) {
     return this.orders.updateStatus(id, dto.status, req.user.userId, true);
+  }
+
+  @Post(':id/cancel')
+  cancel(
+    @Request() req: { user: { userId: number } },
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto?: CancelOrderDto,
+  ) {
+    return this.orders.cancelOrder(id, req.user.userId, false, dto?.reason);
   }
 
   @Get('barista/queue')

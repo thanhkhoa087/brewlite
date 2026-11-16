@@ -54,3 +54,9 @@ export class UpdateOrderStatusDto {
   ])
   status: string;
 }
+
+export class CancelOrderDto {
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}

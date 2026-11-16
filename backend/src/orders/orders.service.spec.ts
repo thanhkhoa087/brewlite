@@ -31,16 +31,19 @@ describe('Task 10 - OrdersService Business Logic & Concurrency', () => {
           return mockProducts.find((p) => p.id === where.id) || null;
         }),
         updateMany: jest.fn().mockImplementation(async ({ where, data }) => {
-          const product = mockProducts.find(
-            (p) =>
-              p.id === where.id &&
-              p.version === where.version &&
-              p.stock >= (where.stock?.gte || 0),
-          );
+          const product = mockProducts.find((p) => {
+            if (p.id !== where.id) return false;
+            if (where.version !== undefined && p.version !== where.version) return false;
+            if (where.stock?.gte !== undefined && p.stock < where.stock.gte) return false;
+            return true;
+          });
           if (!product) return { count: 0 }; // Optimistic lock failed hoặc thiếu tồn kho
 
           if (data.stock?.decrement) {
             product.stock -= data.stock.decrement;
+          }
+          if (data.stock?.increment) {
+            product.stock += data.stock.increment;
           }
           if (data.version?.increment) {
             product.version += data.version.increment;
@@ -212,6 +215,71 @@ describe('Task 10 - OrdersService Business Logic & Concurrency', () => {
       await expect(
         service.updateStatus(order.id, OrderStatus.READY, 1),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('Chức năng hủy đơn hàng & Hoàn trả tồn kho (cancelOrder)', () => {
+    it('cho phép khách hàng hủy đơn khi PENDING và hoàn trả đúng số lượng tồn kho', async () => {
+      // Khởi tạo: Product 1 có stock = 5
+      const order = await service.create(1, {
+        items: [{ productId: 1, size: 'S', toppings: [], qty: 2 }],
+      });
+      // Sau khi tạo đơn, stock còn 3
+      const prodAfterOrder = await mockPrisma.product.findUnique({ where: { id: 1 } });
+      expect(prodAfterOrder.stock).toBe(3);
+
+      // Khách hàng hủy đơn
+      const cancelledOrder = await service.cancelOrder(order.id, 1, false);
+      expect(cancelledOrder.status).toBe(OrderStatus.CANCELLED);
+
+      // Tồn kho được hoàn trả lại thành 5
+      const prodAfterCancel = await mockPrisma.product.findUnique({ where: { id: 1 } });
+      expect(prodAfterCancel.stock).toBe(5);
+    });
+
+    it('cho phép khách hàng hủy đơn khi đã thanh toán (PAID)', async () => {
+      const order = await service.create(1, {
+        items: [{ productId: 2, size: 'S', toppings: [], qty: 1 }],
+      });
+      await service.updateStatus(order.id, OrderStatus.PAID, 1);
+
+      const cancelled = await service.cancelOrder(order.id, 1, false);
+      expect(cancelled.status).toBe(OrderStatus.CANCELLED);
+    });
+
+    it('chặn khách hàng tự hủy đơn khi quán đã bắt đầu pha chế (PREPARING)', async () => {
+      const order = await service.create(1, {
+        items: [{ productId: 2, size: 'S', toppings: [], qty: 1 }],
+      });
+      await service.updateStatus(order.id, OrderStatus.PAID, 1);
+      await service.updateStatus(order.id, OrderStatus.PREPARING, 1, true);
+
+      await expect(
+        service.cancelOrder(order.id, 1, false),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('cho phép Barista hủy đơn khi gặp sự cố tại quầy (PREPARING -> CANCELLED)', async () => {
+      const order = await service.create(1, {
+        items: [{ productId: 2, size: 'S', toppings: [], qty: 1 }],
+      });
+      await service.updateStatus(order.id, OrderStatus.PAID, 1);
+      await service.updateStatus(order.id, OrderStatus.PREPARING, 1, true);
+
+      // Barista hủy đơn
+      const cancelled = await service.cancelOrder(order.id, 999, true, 'Hết nguyên liệu');
+      expect(cancelled.status).toBe(OrderStatus.CANCELLED);
+    });
+
+    it('chặn người dùng khác không phải chủ sở hữu hủy đơn hàng', async () => {
+      const order = await service.create(1, {
+        items: [{ productId: 2, size: 'S', toppings: [], qty: 1 }],
+      });
+
+      // User 2 cố tình hủy đơn của User 1
+      await expect(
+        service.cancelOrder(order.id, 2, false),
+      ).rejects.toThrow();
     });
   });
 });
