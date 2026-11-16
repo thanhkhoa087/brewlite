@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { assertTransition, OrderStatus } from '../orders/order-state';
+import { MEMORY_ORDERS } from '../orders/orders.service';
 import { PrismaService } from '../prisma.service';
 import { CreatePaymentDto } from './payments.dto';
 
@@ -78,6 +79,8 @@ export class PaymentsService {
         where: { id: dto.orderId },
         include: { items: true },
       });
+    } else {
+      order = MEMORY_ORDERS.find((o) => o.id === dto.orderId);
     }
 
     if (!order) {
@@ -89,6 +92,7 @@ export class PaymentsService {
         total: 50000,
         items: [],
       };
+      MEMORY_ORDERS.unshift(order);
     }
 
     if (!order) {

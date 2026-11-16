@@ -15,7 +15,7 @@ const SIZE_EXTRA: Record<string, number> = { S: 0, M: 5000, L: 10000 };
 const TOPPING_PRICE: Record<string, number> = { 'Trân châu': 5000, Kem: 5000 };
 
 // Fallback in-memory store for offline/demo mode when PostgreSQL is not running
-const MEMORY_ORDERS: any[] = [];
+export const MEMORY_ORDERS: any[] = [];
 let memoryOrderSeq = 1001;
 const MEMORY_STOCK: Map<number, { stock: number; version: number }> = new Map([
   [1, { stock: 100, version: 0 }],

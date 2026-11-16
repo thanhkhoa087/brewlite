@@ -81,11 +81,19 @@ export default function OrdersHistoryPage() {
       if (!res.ok) throw new Error(data.message || 'Thanh toán thất bại');
 
       if (data.status === 'PAID' || data.success) {
-        router.push(`/orders/${orderId}/confirmation`);
+        // Cập nhật trạng thái ngay lập tức trên giao diện danh sách đơn hàng từ PENDING/PAYMENT_FAILED sang PAID
+        setOrders((prev) =>
+          prev.map((ord) => (ord.id === orderId ? { ...ord, status: 'PAID' } : ord)),
+        );
+        setToast({
+          type: 'success',
+          message: `Thanh toán đơn hàng #${orderId} thành công! Trạng thái đã chuyển sang Đã thanh toán (PAID).`,
+        });
+        fetchOrders();
       } else {
         setToast({
           type: 'error',
-          message: 'Thanh toán lại không thành công. Vui lòng thử lại.',
+          message: 'Thanh toán không thành công. Vui lòng thử lại.',
         });
         fetchOrders();
       }
