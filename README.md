@@ -78,11 +78,11 @@ npm test
 
 Hệ thống đã chuẩn bị sẵn các tài khoản demo (dùng được cả trên PostgreSQL lẫn chế độ Offline In-Memory):
 
-| Vai trò (Role) | Email đăng nhập | Mật khẩu mặc định | Họ tên hiển thị | Điểm Loyalty |
+| Vai trò (Role) | Email đăng nhập | Mật khẩu mặc định | Họ tên hiển thị |
 |:---|:---|:---:|:---|:---:|
-| **Người dùng / Khách hàng** | `user@brewlite.vn` | `123456` | Nguyễn Văn A (Khách hàng) | 50 điểm |
-| **Quản trị viên (Admin)** | `admin@brewlite.vn` | `123456` | Quản Trị Viên BrewLite (Admin) | 100 điểm |
-| **Nhân viên Quầy Pha chế** | `barista@brewlite.vn` | `123456` | Nhân Viên Pha Chế (Barista) | 0 điểm |
+| **Người dùng / Khách hàng** | `user@brewlite.vn` | `123456` | Nguyễn Văn A (Khách hàng) |
+| **Quản trị viên (Admin)** | `admin@brewlite.vn` | `123456` | Quản Trị Viên BrewLite (Admin) |
+| **Nhân viên Quầy Pha chế** | `barista@brewlite.vn` | `123456` | Nhân Viên Pha Chế (Barista) |
 
 ---
 
