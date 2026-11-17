@@ -10,6 +10,6 @@ export default defineConfig({
   },
   engine: "classic",
   datasource: {
-    url: process.env.DATABASE_URL || "postgresql://brewlite:brewlite@db:5432/brewlite",
+    url: process.env.DATABASE_URL || "postgresql://brewlite:brewlite@localhost:5432/brewlite",
   },
 });

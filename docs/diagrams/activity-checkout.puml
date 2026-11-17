@@ -1,0 +1,95 @@
+@startuml activity-checkout
+title Sơ đồ Hoạt động (Activity Diagram) - Luồng End-to-End Đặt Món và Thanh Toán BrewLite
+
+|Khách hàng (Customer)|
+start
+:Mở ứng dụng PWA BrewLite;
+:Xem Menu thức uống;
+:Chọn món, size (S/M/L) và topping;
+:Thêm vào giỏ hàng;
+:Mở giỏ hàng & bấm "Tiến hành Đặt hàng";
+
+|Giao diện Next.js (Web UI)|
+if (Đã đăng nhập tài khoản?) then (Chưa)
+  |Khách hàng (Customer)|
+  :Nhập email và mật khẩu;
+  |Giao diện Next.js (Web UI)|
+  :Gửi request đăng nhập POST /api/auth/login;
+  |Hệ thống Backend (NestJS)|
+  :Xác thực mật khẩu & cấp JWT Token;
+  |Giao diện Next.js (Web UI)|
+  :Lưu Access Token vào State/Storage;
+else (Đã đăng nhập)
+endif
+
+|Giao diện Next.js (Web UI)|
+:Gửi yêu cầu POST /api/orders;
+
+|Hệ thống Backend (NestJS)|
+:Kiểm tra JWT Bearer Token;
+:Bắt đầu Database Transaction;
+
+|Cơ sở dữ liệu (PostgreSQL)|
+:Kiểm tra số lượng tồn kho sản phẩm (FOR UPDATE);
+
+|Hệ thống Backend (NestJS)|
+if (Còn đủ tồn kho?) then (Không đủ/Hết hàng)
+  :Rollback Transaction;
+  |Giao diện Next.js (Web UI)|
+  :Hiển thị lỗi "Món đã hết hàng";
+  |Khách hàng (Customer)|
+  :Chọn món khác hoặc bỏ món khỏi giỏ;
+  stop
+else (Còn hàng)
+  |Hệ thống Backend (NestJS)|
+  :Trừ tồn kho tạm thời (giữ chỗ tồn kho);
+  :Tính tổng tiền hóa đơn;
+  :Lưu bản ghi Order (Trạng thái: PENDING);
+  |Cơ sở dữ liệu (PostgreSQL)|
+  :Commit Transaction;
+  |Giao diện Next.js (Web UI)|
+  :Nhận orderId & hiển thị giao diện chọn thanh toán;
+endif
+
+|Khách hàng (Customer)|
+:Chọn phương thức thanh toán (MoMo / Thẻ ATM) & xác nhận;
+
+|Giao diện Next.js (Web UI)|
+:Sinh Idempotency-Key (UUIDv4);
+:Gửi yêu cầu POST /api/payments/process (kèm header Idempotency-Key);
+
+|Hệ thống Backend (NestJS)|
+:Kiểm tra Idempotency-Key trong bảng Payment (PostgreSQL);
+if (Key đã tồn tại và thành công?) then (Trùng lặp)
+  :Trả về kết quả giao dịch trước;
+else (Giao dịch mới)
+  |Dịch vụ Thanh toán (Mock Gateway)|
+  :Xử lý trừ tiền tài khoản;
+  if (Giao dịch thành công?) then (Thất bại / Hết tiền)
+    |Hệ thống Backend (NestJS)|
+    :Cập nhật trạng thái Order: CANCELLED;
+    :Hoàn lại số lượng tồn kho đã giữ chỗ;
+    :Ghi nhận Payment: FAILED;
+    |Giao diện Next.js (Web UI)|
+    :Thông báo "Thanh toán thất bại";
+    |Khách hàng (Customer)|
+    :Thử lại hoặc đổi phương thức;
+    stop
+  else (Thành công)
+    |Hệ thống Backend (NestJS)|
+    :Cập nhật trạng thái Order: PAID;
+    |Cơ sở dữ liệu (PostgreSQL)|
+    :Ghi nhận bản ghi Payment (COMPLETED, idempotencyKey);
+  endif
+endif
+
+|Giao diện Next.js (Web UI)|
+:Làm rỗng giỏ hàng (Clear Cart);
+:Điều hướng sang màn hình "Theo dõi đơn hàng";
+
+|Khách hàng (Customer)|
+:Xem tiến độ chuẩn bị món (PENDING -> PAID -> PREPARING -> COMPLETED);
+:Nhận đồ uống tại quầy;
+stop
+
+@enduml

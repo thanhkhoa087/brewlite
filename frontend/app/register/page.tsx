@@ -71,6 +71,7 @@ export default function RegisterPage() {
         email.trim(),
         data.user?.fullName || fullName.trim(),
         data.user?.phone || phone.trim(),
+        data.user?.role || 'CUSTOMER',
       );
 
       router.push('/');

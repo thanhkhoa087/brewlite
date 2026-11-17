@@ -74,6 +74,18 @@ npm test
 
 ---
 
+## Tài khoản Seed sẵn dùng thử (Demo Accounts)
+
+Hệ thống đã chuẩn bị sẵn các tài khoản demo (dùng được cả trên PostgreSQL lẫn chế độ Offline In-Memory):
+
+| Vai trò (Role) | Email đăng nhập | Mật khẩu mặc định | Họ tên hiển thị | Điểm Loyalty |
+|:---|:---|:---:|:---|:---:|
+| **Người dùng / Khách hàng** | `user@brewlite.vn` | `123456` | Nguyễn Văn A (Khách hàng) | 50 điểm |
+| **Quản trị viên (Admin)** | `admin@brewlite.vn` | `123456` | Quản Trị Viên BrewLite (Admin) | 100 điểm |
+| **Nhân viên Quầy Pha chế** | `barista@brewlite.vn` | `123456` | Nhân Viên Pha Chế (Barista) | 0 điểm |
+
+---
+
 ## Danh mục Endpoint API chính
 
 | Phương thức | Endpoint | Chức năng | Xác thực JWT |
@@ -86,6 +98,9 @@ npm test
 | `GET` | `/orders/me` | Lấy lịch sử đơn hàng của người dùng | **Có** |
 | `GET` | `/orders/:id` | Xem chi tiết đơn hàng | **Có** |
 | `POST` | `/orders/:id/cancel` | Hủy đơn hàng và hoàn trả tồn kho | **Có** |
-| `PATCH` | `/orders/:id/status` | Cập nhật trạng thái đơn (Barista KDS) | **Có** |
-| `GET` | `/orders/barista/queue` | Lấy hàng đợi quầy pha chế KDS | **Có** |
+| `PATCH` | `/orders/:id/status` | Cập nhật trạng thái đơn (Barista KDS) | **Có (Barista/Admin)** |
+| `GET` | `/orders/barista/queue` | Lấy hàng đợi quầy pha chế KDS | **Có (Barista/Admin)** |
+| `GET` | `/auth/baristas` | Lấy danh sách tài khoản Barista | **Có (Admin)** |
+| `POST` | `/auth/baristas` | Quản lý tạo tài khoản Barista mới | **Có (Admin)** |
+| `DELETE` | `/auth/baristas/:id` | Quản lý xóa tài khoản Barista | **Có (Admin)** |
 | `POST` | `/payments` | Thanh toán đơn hàng không tiền mặt | **Có** |

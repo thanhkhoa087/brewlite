@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 950 780" width="100%" height="100%" style="background:#ffffff; font-family:'Segoe UI', Arial, sans-serif;">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#2c3e50" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#27ae60" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#c0392b" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="475" y="32" font-size="18" font-weight="bold" text-anchor="middle" fill="#1e293b">SƠ ĐỒ TRÌNH TỰ (SEQUENCE DIAGRAM) - USE-CASE THANH TOÁN BREWLITE</text>
+
+  <!-- Lifeline Boxes -->
+  <!-- Customer -->
+  <rect x="30" y="55" width="120" height="42" rx="8" fill="#e2e8f0" stroke="#475569" stroke-width="1.5"/>
+  <text x="90" y="81" font-size="13" font-weight="bold" text-anchor="middle" fill="#1e293b">Customer</text>
+  <line x1="90" y1="97" x2="90" y2="740" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4"/>
+
+  <!-- Next.js UI -->
+  <rect x="220" y="55" width="130" height="42" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="285" y="81" font-size="13" font-weight="bold" text-anchor="middle" fill="#1e40af">Next.js UI (PWA)</text>
+  <line x1="285" y1="97" x2="285" y2="740" stroke="#93c5fd" stroke-width="1.5" stroke-dasharray="4"/>
+
+  <!-- NestJS API -->
+  <rect x="420" y="55" width="130" height="42" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="485" y="81" font-size="13" font-weight="bold" text-anchor="middle" fill="#166534">NestJS API Core</text>
+  <line x1="485" y1="97" x2="485" y2="740" stroke="#86efac" stroke-width="1.5" stroke-dasharray="4"/>
+
+  <!-- PostgreSQL Database -->
+  <rect x="620" y="55" width="130" height="42" rx="8" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="685" y="81" font-size="13" font-weight="bold" text-anchor="middle" fill="#92400e">PostgreSQL DB</text>
+  <line x1="685" y1="97" x2="685" y2="740" stroke="#fcd34d" stroke-width="1.5" stroke-dasharray="4"/>
+
+  <!-- Payment Service -->
+  <rect x="800" y="55" width="130" height="42" rx="8" fill="#fce7f3" stroke="#db2777" stroke-width="1.5"/>
+  <text x="865" y="81" font-size="13" font-weight="bold" text-anchor="middle" fill="#9d174d">Mock Payment GW</text>
+  <line x1="865" y1="97" x2="865" y2="740" stroke="#f472b6" stroke-width="1.5" stroke-dasharray="4"/>
+
+  <!-- Step 1: Add to cart & initiate checkout -->
+  <line x1="90" y1="125" x2="285" y2="125" stroke="#2c3e50" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="187" y="118" font-size="11" font-weight="bold" text-anchor="middle" fill="#1e293b">1. Bấm "Tiến hành đặt hàng"</text>
+
+  <!-- Step 2: Next.js creates Order -->
+  <rect x="275" y="138" width="20" height="60" fill="#bfdbfe" stroke="#3b82f6"/>
+  <line x1="285" y1="150" x2="485" y2="150" stroke="#2c3e50" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="385" y="144" font-size="11" font-weight="bold" text-anchor="middle" fill="#1e293b">2. POST /api/orders (Bearer JWT, items, note)</text>
+
+  <!-- Step 3: Auth & Transaction -->
+  <rect x="475" y="145" width="20" height="150" fill="#bbf7d0" stroke="#22c55e"/>
+  <line x1="485" y1="175" x2="685" y2="175" stroke="#2c3e50" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="585" y="169" font-size="10" text-anchor="middle" fill="#334155">3. BEGIN TX: SELECT stock FOR UPDATE</text>
+
+  <line x1="685" y1="205" x2="485" y2="205" stroke="#64748b" stroke-width="1.2" stroke-dasharray="3" marker-end="url(#arrow)"/>
+  <text x="585" y="199" font-size="10" text-anchor="middle" fill="#475569">4. Stock available (Đủ hàng)</text>
+
+  <line x1="485" y1="230" x2="685" y2="230" stroke="#2c3e50" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="585" y="224" font-size="10" font-weight="bold" text-anchor="middle" fill="#1e293b">5. Trừ kho &amp; INSERT order (PENDING) &amp; COMMIT</text>
+
+  <line x1="485" y1="255" x2="285" y2="255" stroke="#27ae60" stroke-width="1.3" stroke-dasharray="3" marker-end="url(#arrow-green)"/>
+  <text x="385" y="249" font-size="10" font-weight="bold" text-anchor="middle" fill="#15803d">201 Created { orderId: "ord_101", amount: 65000, status: "PENDING" }</text>
+
+  <!-- Step 4: Process Payment with Idempotency -->
+  <line x1="90" y1="290" x2="285" y2="290" stroke="#2c3e50" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="187" y="283" font-size="11" font-weight="bold" text-anchor="middle" fill="#1e293b">6. Chọn MoMo &amp; sinh Idempotency-Key</text>
+
+  <line x1="285" y1="315" x2="485" y2="315" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <text x="385" y="308" font-size="11" font-weight="bold" text-anchor="middle" fill="#1d4ed8">7. POST /api/payments/process (Header: Idempotency-Key)</text>
+
+  <!-- Idempotency Group Box -->
+  <rect x="360" y="335" width="560" height="260" rx="6" fill="#f8fafc" stroke="#64748b" stroke-width="1" stroke-dasharray="4"/>
+  <text x="375" y="352" font-size="11" font-weight="bold" fill="#0f172a">ALT [Kiểm tra Idempotency trong bảng Payment (PostgreSQL)]</text>
+
+  <!-- Branch 1: Idempotency Replay -->
+  <text x="380" y="375" font-size="10" font-weight="bold" fill="#0284c7">[Key đã tồn tại: Client Retry do mạng chậm]</text>
+  <line x1="485" y1="390" x2="285" y2="390" stroke="#0284c7" stroke-width="1.5" stroke-dasharray="3" marker-end="url(#arrow)"/>
+  <text x="385" y="384" font-size="10" text-anchor="middle" fill="#0369a1">200 OK (Trả về kết quả cũ - Tránh trừ tiền lần 2)</text>
+
+  <!-- Branch 2: New Payment -->
+  <line x1="360" y1="410" x2="920" y2="410" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="2"/>
+  <text x="380" y="428" font-size="10" font-weight="bold" fill="#15803d">[Giao dịch mới: Xử lý qua Mock Gateway]</text>
+
+  <line x1="485" y1="445" x2="865" y2="445" stroke="#db2777" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="675" y="439" font-size="10" text-anchor="middle" fill="#be185d">8. Mock Charge Request { orderId, amount, method: 'MOMO' }</text>
+
+  <line x1="865" y1="475" x2="485" y2="475" stroke="#db2777" stroke-width="1.3" stroke-dasharray="3" marker-end="url(#arrow)"/>
+  <text x="675" y="469" font-size="10" text-anchor="middle" fill="#be185d">9. Charge Response { success: true, txId: 'TX-9988' }</text>
+
+  <line x1="485" y1="510" x2="685" y2="510" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="585" y="504" font-size="10" text-anchor="middle" fill="#15803d">10. UPDATE order: PAID, INSERT Payment (COMPLETED, key)</text>
+
+  <line x1="485" y1="550" x2="285" y2="550" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="3" marker-end="url(#arrow-green)"/>
+  <text x="385" y="544" font-size="10" font-weight="bold" text-anchor="middle" fill="#15803d">11. 200 OK { status: 'PAID', txCode: 'TX-9988' }</text>
+
+  <!-- Step 5: Order Tracking -->
+  <line x1="285" y1="630" x2="90" y2="630" stroke="#27ae60" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+  <text x="187" y="623" font-size="11" font-weight="bold" text-anchor="middle" fill="#166534">12. Hiển thị "Đặt hàng thành công &amp; Theo dõi đơn"</text>
+
+  <line x1="90" y1="670" x2="285" y2="670" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="187" y="663" font-size="10" text-anchor="middle" fill="#475569">13. State Machine: PENDING -> PAID -> PREPARING -> COMPLETED</text>
+
+  <rect x="75" y="700" width="800" height="25" rx="5" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="475" y="717" font-size="11" text-anchor="middle" fill="#475569">✓ Đạt chuẩn: Trừ kho trong Transaction, Idempotency lưu trong PostgreSQL Payment, State chuẩn 4 bước</text>
+</svg>

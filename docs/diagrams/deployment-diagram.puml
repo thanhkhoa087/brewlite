@@ -1,0 +1,75 @@
+@startuml deployment-diagram
+skinparam componentStyle uml2
+skinparam nodesep 20
+skinparam ranksep 30
+
+title Sơ đồ Triển khai (Deployment Diagram) - BrewLite Production & CI/CD Pipeline
+
+cloud "Client Layer (End-User Devices)" {
+  node "Thiết bị di động / Laptop của Khách hàng" <<Device>> {
+    artifact "Mobile Browser / PWA Client\n(Google Chrome / Safari / Edge)" as Browser
+  }
+}
+
+cloud "Development & CI/CD Boundary (GitHub Platform)" {
+  node "GitHub Repository & Actions Runner\n(thanhkhoa087/brewlite)" <<CI/CD Server>> {
+    component "Source Code Monorepo\n(apps/web, apps/api, docs)" as Monorepo
+    component "CI Workflow (.github/workflows/ci.yml)\n(Install -> Lint -> Test -> Build)" as CI_Pipeline
+    component "CD Workflow (.github/workflows/cd.yml)\n(Docker Build -> Push -> Trigger Deploy)" as CD_Pipeline
+  }
+  
+  node "GitHub Container Registry\n(ghcr.io)" <<Registry>> {
+    artifact "Docker Image: brewlite-api:latest" as ImageAPI
+    artifact "Docker Image: brewlite-web:latest" as ImageWeb
+  }
+}
+
+cloud "Production Cloud Platform (Vercel & Render PaaS)" {
+  
+  node "Vercel Production Edge\n(brewlite-web.vercel.app)" <<PaaS Frontend Node>> {
+    component "Next.js Web Service (PWA)\nEdge Runtime & Node.js 20 (Port 443 / HTTPS)" as NextJSService
+    file "Frontend Env Vars:\nNEXT_PUBLIC_API_URL=https://api-brewlite.onrender.com/api\nNEXT_PUBLIC_APP_ENV=production" as WebEnv
+  }
+
+  node "Render Web Service (PaaS / Docker Runner)\n(api-brewlite.onrender.com)" <<PaaS Backend Node>> {
+    component "NestJS Core API\nNode.js 20 / Express (Port 5000 / HTTPS)" as NestAPIService
+    component "Health Check Endpoint\n(GET /api/health)" as HealthCheck
+    component "Winston / Nest Logger\n(Standard Out / Cloud Logs)" as Logger
+    component "PostgreSQL Idempotency Check\n(Query Payment Table directly)" as IdempotencyCheck
+    file "Backend Secrets & Env Vars:\nDATABASE_URL (PostgreSQL Internal VPC)\nJWT_SECRET=******\nPORT=5000" as APIEnv
+  }
+
+  node "Managed Database Cluster\n(PostgreSQL 16 Managed / Private VPC)" <<Database Node>> {
+    database "PostgreSQL 16 Engine\n(Port 5432 - Internal Network Only)" as PostgresDB
+    storage "Persistent Block Storage Volume\n(SSD 10GB Data Persistent)" as DataVolume
+  }
+
+  node "External Mock Payment Sandbox" <<External Service>> {
+    component "Mock Payment Gateway\n(HTTPS Endpoint & Webhook Simulation)" as MockPay
+  }
+}
+
+' Connections
+Browser --> NextJSService : HTTPS / TLS 1.3 (brewlite-web.vercel.app)
+Browser --> NestAPIService : REST API calls (/api/* via HTTPS)
+NextJSService .. WebEnv : Reads
+NextJSService --> NestAPIService : Server-Side Fetch (HTTPS)
+
+NestAPIService .. APIEnv : Reads
+NestAPIService --> HealthCheck : Exposes
+NestAPIService --> Logger : Streams stdout
+NestAPIService --> IdempotencyCheck : Verifies key in Payment table
+
+NestAPIService --> PostgresDB : TCP Connection Pool (Internal Private Network :5432)
+PostgresDB -- DataVolume : Mounts persistent storage
+
+NestAPIService --> MockPay : HTTPS Outbound (Payment Simulation)
+
+Monorepo --> CI_Pipeline : Git Push / PR (main, develop)
+CI_Pipeline --> CD_Pipeline : Quality Gate Passed (100% Tests)
+CD_Pipeline --> ImageAPI : Build & Push to ghcr.io
+CD_Pipeline --> ImageWeb : Build & Push to ghcr.io
+CD_Pipeline --> NestAPIService : Trigger Deploy Webhook via GitHub Secret
+CD_Pipeline --> NextJSService : Trigger Deploy Webhook via Vercel Deploy Hook
+
+@enduml

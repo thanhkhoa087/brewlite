@@ -63,6 +63,42 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         });
         this.logger.log('Đã nạp 4 sản phẩm mẫu vào cơ sở dữ liệu PostgreSQL.');
       }
+
+      const userCount = await this.user.count();
+      if (userCount === 0) {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const bcrypt = require('bcrypt');
+        const defaultPasswordHash = await bcrypt.hash('123456', 10);
+        await this.user.createMany({
+          data: [
+            {
+              email: 'user@brewlite.vn',
+              fullName: 'Nguyễn Văn A',
+              role: 'CUSTOMER',
+              loyaltyPoints: 50,
+              passwordHash: defaultPasswordHash,
+              phone: '0901234567',
+            },
+            {
+              email: 'barista@brewlite.vn',
+              fullName: 'Nhân Viên Barista',
+              role: 'BARISTA',
+              loyaltyPoints: 0,
+              passwordHash: defaultPasswordHash,
+              phone: '0901234567',
+            },
+            {
+              email: 'admin@brewlite.vn',
+              fullName: 'Quản Lý Cửa Hàng',
+              role: 'ADMIN',
+              loyaltyPoints: 100,
+              passwordHash: defaultPasswordHash,
+              phone: '0901234567',
+            },
+          ],
+        });
+        this.logger.log('Đã nạp 3 tài khoản mặc định vào cơ sở dữ liệu PostgreSQL.');
+      }
     } catch (err) {
       this.logger.warn(
         'Không thể kiểm tra/nạp dữ liệu mẫu seed (bảng có thể chưa được migrate): ' +

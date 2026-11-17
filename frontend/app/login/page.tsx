@@ -54,9 +54,14 @@ export default function LoginPage() {
         email.trim(),
         data.user?.fullName || '',
         data.user?.phone || '',
+        data.user?.role || 'CUSTOMER',
       );
 
-      router.push('/');
+      if (data.user?.role === 'BARISTA' || data.user?.role === 'ADMIN') {
+        router.push('/barista');
+      } else {
+        router.push('/');
+      }
     } catch (err) {
       setError((err as Error).message);
     } finally {

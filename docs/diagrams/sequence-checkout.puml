@@ -1,0 +1,102 @@
+@startuml sequence-checkout
+autonumber
+skinparam BoxPadding 10
+skinparam ParticipantPadding 10
+
+actor "Customer\n(Người dùng)" as Customer
+box "Frontend (PWA)" #E3F2FD
+participant "Next.js UI\n(apps/web)" as UI
+end box
+
+box "Backend (Core Service)" #E8F5E9
+participant "NestJS API\n(apps/api)" as API
+end box
+
+box "Storage & Gateway" #FFF3E0
+database "Database\n(PostgreSQL)" as DB
+participant "Payment Service\n(Mock Gateway)" as Payment
+end box
+
+== 1. Xác thực & Khởi tạo Đơn hàng ==
+Customer -> UI: Bấm "Tiến hành đặt hàng"
+activate UI
+UI -> API: POST /api/orders (Bearer JWT, items, note)
+activate API
+
+API -> API: Kiểm tra JWT Token & Validate DTO
+alt JWT không hợp lệ hoặc hết hạn
+    API --> UI: 401 Unauthorized
+    UI --> Customer: Yêu cầu đăng nhập lại
+else JWT hợp lệ
+    API -> DB: BEGIN TRANSACTION
+    activate DB
+    API -> DB: SELECT stock FROM products WHERE id IN (...) FOR UPDATE
+    DB --> API: Trả về số lượng tồn kho
+
+    alt Tồn kho không đủ (Out of Stock)
+        API -> DB: ROLLBACK
+        API --> UI: 409 Conflict ("Sản phẩm đã hết hàng")
+        UI --> Customer: Thông báo hết hàng, vui lòng chọn lại
+    else Tồn kho hợp lệ (Trừ tồn kho ngay trong Transaction)
+        API -> API: Tính toán tổng tiền chính xác
+        API -> DB: UPDATE products SET stock = stock - quantity WHERE id IN (...)
+        API -> DB: INSERT INTO orders (user_id, total_amount, status='PENDING')
+        API -> DB: INSERT INTO order_items (...)
+        API -> DB: COMMIT
+        deactivate DB
+        API --> UI: 201 Created { orderId: "ord_101", amount: 65000, status: "PENDING" }
+    end
+end
+deactivate API
+
+== 2. Xử lý Thanh toán & Kiểm soát Idempotency ==
+Customer -> UI: Chọn thanh toán Ví MoMo & bấm "Thanh toán ngay"
+UI -> UI: Sinh Idempotency-Key (UUIDv4)
+UI -> API: POST /api/payments/process\nHeader: Idempotency-Key: "idem_abc123"\nBody: { orderId: "ord_101", method: "MOMO", amount: 65000 }
+activate API
+
+API -> DB: SELECT * FROM payments WHERE idempotency_key = 'idem_abc123'
+activate DB
+DB --> API: Trả về kết quả kiểm tra
+deactivate DB
+
+alt Nhánh 1: Idempotency Key Đã Tồn Tại (Client Retry do mạng chậm)
+    API --> UI: 200 OK (Trả về kết quả giao dịch đã lưu trước đó - Tránh trừ tiền trùng)
+    UI --> Customer: Hiển thị trạng thái đơn hàng thành công
+else Nhánh 2: Giao dịch Mới (Chưa từng xử lý key này)
+    API -> Payment: POST /mock-charge { orderId: "ord_101", amount: 65000, method: "MOMO" }
+    activate Payment
+    Payment --> API: Response { success: true/false, txId: "tx_9988" }
+    deactivate Payment
+
+    alt Thanh toán Thất Bại (Số dư không đủ / Thẻ lỗi)
+        API -> DB: BEGIN TRANSACTION
+        activate DB
+        API -> DB: UPDATE orders SET status = 'CANCELLED' WHERE id = 'ord_101'
+        API -> DB: UPDATE products SET stock = stock + quantity WHERE id IN (...)
+        API -> DB: INSERT INTO payments (order_id, status='FAILED', tx_code='tx_9988')
+        API -> DB: COMMIT
+        deactivate DB
+        API --> UI: 400 Bad Request ("Thanh toán thất bại: Không đủ số dư")
+        UI --> Customer: Báo lỗi thanh toán & cho phép chọn phương thức khác
+    else Thanh toán Thành Công (Happy Path)
+        API -> DB: BEGIN TRANSACTION
+        activate DB
+        API -> DB: UPDATE orders SET status = 'PAID' WHERE id = 'ord_101'
+        API -> DB: INSERT INTO payments (order_id, status='COMPLETED', idempotency_key='idem_abc123', tx_code='tx_9988')
+        API -> DB: COMMIT
+        deactivate DB
+
+        API --> UI: 200 OK { status: "PAID", orderId: "ord_101", txCode: "tx_9988" }
+        deactivate API
+
+        UI -> UI: Xóa giỏ hàng (Clear Local Storage)
+        UI -> UI: Điều hướng sang /orders/ord_101/track
+        UI --> Customer: Hiển thị màn hình "Đặt hàng thành công & Theo dõi đơn"
+    end
+end
+deactivate UI
+
+note over Customer, DB: Order State Machine: PENDING -> PAID -> PREPARING -> COMPLETED
+
+@enduml

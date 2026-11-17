@@ -25,6 +25,7 @@ type Order = {
 export default function OrdersHistoryPage() {
   const token = useAuthStore((s) => s.token);
   const email = useAuthStore((s) => s.email);
+  const role = useAuthStore((s) => s.role);
   const router = useRouter();
 
   const [orders, setOrders] = useState<Order[]>([]);
@@ -53,7 +54,11 @@ export default function OrdersHistoryPage() {
         throw new Error('Lỗi khi tải lịch sử đơn hàng');
       }
       const data = await res.json();
-      setOrders(data);
+      // Đảm bảo không lưu / hiển thị đơn hàng thanh toán lỗi (PAYMENT_FAILED) trong lịch sử
+      const validOrders = Array.isArray(data)
+        ? data.filter((o: Order) => o.status !== 'PAYMENT_FAILED')
+        : [];
+      setOrders(validOrders);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -220,6 +225,14 @@ export default function OrdersHistoryPage() {
           ← Quay lại menu chính
         </Link>
         <div className="flex items-center gap-3">
+          {(role === 'BARISTA' || role === 'ADMIN') && (
+            <Link
+              href="/barista"
+              className="inline-flex items-center gap-1 text-xs font-bold text-white bg-amber-800 hover:bg-amber-900 px-2.5 py-1 rounded-full shadow-sm transition"
+            >
+              ☕ Quầy Barista
+            </Link>
+          )}
           <Link
             href="/cart"
             className="inline-flex items-center gap-1 text-sm font-bold text-amber-900 hover:underline"

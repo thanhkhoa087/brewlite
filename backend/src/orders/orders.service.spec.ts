@@ -83,7 +83,11 @@ describe('Task 10 - OrdersService Business Logic & Concurrency', () => {
           return order;
         }),
         findMany: jest.fn().mockImplementation(async ({ where }) => {
-          return mockOrders.filter((o) => o.userId === where?.userId);
+          return mockOrders.filter((o) => {
+            if (where?.userId && o.userId !== where.userId) return false;
+            if (where?.status?.not && o.status === where.status.not) return false;
+            return true;
+          });
         }),
       },
       $transaction: jest.fn().mockImplementation(async (cb) => {
@@ -280,6 +284,63 @@ describe('Task 10 - OrdersService Business Logic & Concurrency', () => {
       await expect(
         service.cancelOrder(order.id, 2, false),
       ).rejects.toThrow();
+    });
+  });
+
+  describe('Lịch sử đơn hàng: loại bỏ các đơn thanh toán lỗi (PAYMENT_FAILED)', () => {
+    it('không lưu / không trả về đơn có trạng thái PAYMENT_FAILED trong lịch sử của người dùng', async () => {
+      // Tạo đơn 1: Thành công
+      const order1 = await service.create(1, {
+        items: [{ productId: 1, size: 'S', toppings: [], qty: 1 }],
+      });
+      await service.updateStatus(order1.id, OrderStatus.PAID, 1);
+
+      // Tạo đơn 2: Thanh toán lỗi
+      const order2 = await service.create(1, {
+        items: [{ productId: 2, size: 'M', toppings: [], qty: 1 }],
+      });
+      await service.updateStatus(order2.id, OrderStatus.PAYMENT_FAILED, 1);
+
+      // Lấy danh sách lịch sử đơn
+      const history = await service.findByUser(1);
+
+      // Đơn 1 (PAID) xuất hiện, Đơn 2 (PAYMENT_FAILED) bị loại bỏ hoàn toàn
+      expect(history.some((o: any) => o.id === order1.id)).toBe(true);
+      expect(history.some((o: any) => o.id === order2.id)).toBe(false);
+    });
+  });
+
+  describe('Quản lý tồn kho theo nguyên liệu thô (Ingredient-based Stock) & Barista hủy đơn', () => {
+    it('Barista có quyền hủy đơn tại quầy khi đang chờ pha (PAID -> CANCELLED) hoặc đang pha (PREPARING -> CANCELLED)', async () => {
+      const order = await service.create(1, {
+        items: [{ productId: 1, size: 'S', toppings: [], qty: 1 }],
+      });
+      await service.updateStatus(order.id, OrderStatus.PAID, 1);
+
+      // Barista hủy đơn tại quầy
+      const cancelledByBarista = await service.cancelOrder(
+        order.id,
+        999, // Barista ID
+        true, // isBarista = true
+        'Hết nguyên liệu pha chế tại quầy',
+      );
+
+      expect(cancelledByBarista.status).toBe(OrderStatus.CANCELLED);
+    });
+
+    it('tính toán trừ và hoàn trả khối lượng nguyên liệu thô chính xác theo công thức định lượng', async () => {
+      // Đặt 2 ly Cà phê sữa Size S: 2 * 15g Cà phê = 30g, 2 * 25g Sữa đặc = 50g
+      const order = await service.create(1, {
+        items: [{ productId: 1, size: 'S', toppings: [], qty: 2 }],
+      });
+
+      expect(order).toBeDefined();
+      expect(order.items.length).toBe(1);
+      expect(order.items[0].qty).toBe(2);
+
+      // Khi Barista hủy đơn, đơn chuyển CANCELLED và hoàn trả nguyên liệu
+      const cancelled = await service.cancelOrder(order.id, 999, true, 'Khách đổi món');
+      expect(cancelled.status).toBe(OrderStatus.CANCELLED);
     });
   });
 });

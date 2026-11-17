@@ -6,13 +6,28 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import {
+  calculateRequiredIngredients,
+  MEMORY_INGREDIENTS,
+} from '../products/ingredients';
 import { MOCK_PRODUCTS } from '../products/products.service';
 import { assertTransition, OrderStatus } from './order-state';
 import { CreateOrderDto } from './orders.dto';
 import { applyVoucher } from './vouchers';
 
 const SIZE_EXTRA: Record<string, number> = { S: 0, M: 5000, L: 10000 };
-const TOPPING_PRICE: Record<string, number> = { 'Trân châu': 5000, Kem: 5000 };
+const TOPPING_PRICE: Record<string, number> = {
+  'Trân châu': 5000,
+  'Trân châu đen': 5000,
+  'Tran chau': 5000,
+  'Tran chau den': 5000,
+  Kem: 5000,
+  'Kem béo': 5000,
+  'Kem beo': 5000,
+  'Kem cheese': 5000,
+  Thạch: 5000,
+  Thach: 5000,
+};
 
 // Fallback in-memory store for offline/demo mode when PostgreSQL is not running
 export const MEMORY_ORDERS: any[] = [];
@@ -109,10 +124,48 @@ export class OrdersService {
     const { discount, appliedCode } = applyVoucher(dto.voucherCode, subtotal);
     const finalTotal = Math.max(0, subtotal - discount);
 
-    // 4. Nếu kết nối PostgreSQL: Dùng Database Transaction + Optimistic Locking
+    // Tính toán lượng nguyên liệu thô cần dùng theo công thức định lượng (Ingredient-based Stock)
+    const requiredIngredients = calculateRequiredIngredients(dto.items);
+
+    // 4. Nếu kết nối PostgreSQL: Dùng Database Transaction + Optimistic Locking trên Nguyên liệu thô & Sản phẩm
     if (this.prisma.isConnected) {
       return this.prisma.$transaction(async (tx) => {
-        // Kiểm tra tồn kho & cập nhật Optimistic Lock cho từng sản phẩm
+        // A. Kiểm tra tồn kho nguyên liệu thô và áp dụng Optimistic Lock
+        if ((tx as any).ingredient) {
+          for (const [ingredientId, neededAmount] of requiredIngredients.entries()) {
+            const currentIng = await (tx as any).ingredient.findUnique({
+              where: { id: ingredientId },
+            });
+
+            if (currentIng) {
+              if (currentIng.stock < neededAmount) {
+                throw new BadRequestException(
+                  `Kho không đủ nguyên liệu "${currentIng.name}" để pha chế (còn ${currentIng.stock}${currentIng.unit}, cần ${neededAmount}${currentIng.unit})`,
+                );
+              }
+
+              const updatedIng = await (tx as any).ingredient.updateMany({
+                where: {
+                  id: currentIng.id,
+                  version: currentIng.version,
+                  stock: { gte: neededAmount },
+                },
+                data: {
+                  stock: { decrement: neededAmount },
+                  version: { increment: 1 },
+                },
+              });
+
+              if (updatedIng.count === 0) {
+                throw new ConflictException(
+                  `Xung đột tương tranh: Nguyên liệu "${currentIng.name}" đã được cập nhật bởi đơn khác. Vui lòng thử lại.`,
+                );
+              }
+            }
+          }
+        }
+
+        // B. Cập nhật Optimistic Lock cho từng sản phẩm
         for (const [productId, requestedQty] of qtyByProduct.entries()) {
           const current = await tx.product.findUnique({
             where: { id: productId },
@@ -164,7 +217,21 @@ export class OrdersService {
       });
     }
 
-    // Fallback in-memory: Mô phỏng kiểm tra tồn kho và optimistic lock
+    // Fallback in-memory: Trừ tồn kho nguyên liệu thô
+    for (const [ingredientId, neededAmount] of requiredIngredients.entries()) {
+      const ing = MEMORY_INGREDIENTS.get(ingredientId);
+      if (ing) {
+        if (ing.stock < neededAmount) {
+          throw new BadRequestException(
+            `Kho không đủ nguyên liệu "${ing.name}" để pha chế (còn ${ing.stock}${ing.unit}, cần ${neededAmount}${ing.unit})`,
+          );
+        }
+        ing.stock -= neededAmount;
+        ing.version += 1;
+        MEMORY_INGREDIENTS.set(ingredientId, ing);
+      }
+    }
+
     for (const [productId, requestedQty] of qtyByProduct.entries()) {
       const stockInfo = MEMORY_STOCK.get(productId) || { stock: 100, version: 0 };
       if (stockInfo.stock < requestedQty) {
@@ -289,9 +356,31 @@ export class OrdersService {
     // Kiểm tra chuyển trạng thái hợp lệ qua State Machine
     assertTransition(currentStatus, OrderStatus.CANCELLED);
 
-    // Hoàn trả tồn kho (Restock)
+    // Hoàn trả tồn kho nguyên liệu thô (Ingredient-based Restock) và Sản phẩm
+    const orderItemsToRefund = currentOrder.items.map((it: any) => ({
+      productId: it.productId,
+      size: it.size,
+      toppings: it.toppings ? it.toppings.split(',').filter(Boolean) : [],
+      qty: it.qty,
+    }));
+    const refundIngredients = calculateRequiredIngredients(orderItemsToRefund);
+
     if (this.prisma.isConnected) {
       return this.prisma.$transaction(async (tx) => {
+        // Hoàn trả nguyên liệu thô vào kho
+        if ((tx as any).ingredient) {
+          for (const [ingredientId, refundAmount] of refundIngredients.entries()) {
+            await (tx as any).ingredient.updateMany({
+              where: { id: ingredientId },
+              data: {
+                stock: { increment: refundAmount },
+                version: { increment: 1 },
+              },
+            });
+          }
+        }
+
+        // Hoàn trả sản phẩm
         for (const item of currentOrder.items) {
           if (item.productId) {
             await tx.product.updateMany({
@@ -312,7 +401,15 @@ export class OrdersService {
       });
     }
 
-    // In-memory fallback
+    // In-memory fallback hoàn trả nguyên liệu & sản phẩm
+    for (const [ingredientId, refundAmount] of refundIngredients.entries()) {
+      const ing = MEMORY_INGREDIENTS.get(ingredientId);
+      if (ing) {
+        ing.stock += refundAmount;
+        ing.version += 1;
+        MEMORY_INGREDIENTS.set(ingredientId, ing);
+      }
+    }
     for (const item of currentOrder.items) {
       const stockInfo = MEMORY_STOCK.get(item.productId);
       if (stockInfo) {
@@ -351,7 +448,10 @@ export class OrdersService {
     if (this.prisma.isConnected) {
       try {
         return await this.prisma.order.findMany({
-          where: { userId },
+          where: {
+            userId,
+            status: { not: OrderStatus.PAYMENT_FAILED },
+          },
           include: { items: true },
           orderBy: { createdAt: 'desc' },
         });
@@ -359,7 +459,9 @@ export class OrdersService {
         // Fallback
       }
     }
-    return MEMORY_ORDERS.filter((o) => o.userId === userId);
+    return MEMORY_ORDERS.filter(
+      (o) => o.userId === userId && o.status !== OrderStatus.PAYMENT_FAILED,
+    );
   }
 
   async findById(userId: number, orderId: number) {

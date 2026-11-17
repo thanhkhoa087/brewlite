@@ -1,0 +1,132 @@
+@startuml class-diagram
+skinparam classAttributeIconSize 0
+
+enum UserRole {
+  CUSTOMER
+  BARISTA
+  MANAGER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PREPARING
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  MOMO
+  VNPAY
+  CREDIT_CARD
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+class User {
+  - id: String
+  - email: String
+  - passwordHash: String
+  - fullName: String
+  - phoneNumber: String
+  - role: UserRole
+  - createdAt: DateTime
+  - updatedAt: DateTime
+  + register(): User
+  + login(): String
+  + updateProfile(): Boolean
+}
+
+class Product {
+  - id: String
+  - name: String
+  - description: String
+  - category: String
+  - basePrice: Decimal
+  - imageUrl: String
+  - stock: Integer
+  - isAvailable: Boolean
+  - createdAt: DateTime
+  + checkAvailability(qty: Integer): Boolean
+  + deductStock(qty: Integer): Boolean
+}
+
+class Order {
+  - id: String
+  - orderCode: String
+  - userId: String
+  - promotionId: String
+  - subTotal: Decimal
+  - discountAmount: Decimal
+  - totalAmount: Decimal
+  - status: OrderStatus
+  - note: String
+  - createdAt: DateTime
+  - updatedAt: DateTime
+  + calculateTotal(): Decimal
+  + updateStatus(newStatus: OrderStatus): Void
+  + cancel(): Void
+}
+
+class OrderItem {
+  - id: String
+  - orderId: String
+  - productId: String
+  - size: String
+  - sweetLevel: Integer
+  - iceLevel: Integer
+  - toppings: List<String>
+  - unitPrice: Decimal
+  - quantity: Integer
+  - itemTotal: Decimal
+  + computeItemTotal(): Decimal
+}
+
+class Payment {
+  - id: String
+  - orderId: String
+  - amount: Decimal
+  - method: PaymentMethod
+  - status: PaymentStatus
+  - transactionCode: String
+  - idempotencyKey: String
+  - paidAt: DateTime
+  + processPayment(): Boolean
+  + verifyIdempotency(): Boolean
+}
+
+class Promotion {
+  - id: String
+  - code: String
+  - description: String
+  - discountType: DiscountType
+  - discountValue: Decimal
+  - minOrderAmount: Decimal
+  - maxDiscountAmount: Decimal
+  - validFrom: DateTime
+  - validTo: DateTime
+  - isActive: Boolean
+  + isValid(orderAmount: Decimal): Boolean
+  + applyDiscount(orderAmount: Decimal): Decimal
+}
+
+' Relationships & Multiplicities
+User "1" -- "0..*" Order : places >
+Order "1" *-- "1..*" OrderItem : contains >
+Product "1" -- "0..*" OrderItem : referenced in >
+Order "1" -- "0..1" Payment : settled by >
+Order "0..*" -- "0..1" Promotion : uses coupon >
+
+@enduml

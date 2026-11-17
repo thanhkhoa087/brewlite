@@ -25,7 +25,8 @@ type OrderDetail = {
 };
 
 function ConfirmationContent() {
-  const { id } = useParams<{ id: string }>();
+  const params = useParams();
+  const id = params?.id ? (Array.isArray(params.id) ? params.id[0] : params.id) : '';
   const token = useAuthStore((s) => s.token);
   const router = useRouter();
 
@@ -37,7 +38,19 @@ function ConfirmationContent() {
   const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
-    if (!token) {
+    // Lấy token từ Zustand hoặc fallback từ localStorage nếu Zustand đang rehydrate
+    let activeToken = token;
+    if (!activeToken && typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('brewlite-auth');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          activeToken = parsed?.state?.token || null;
+        }
+      } catch {}
+    }
+
+    if (!activeToken) {
       router.push('/login');
       return;
     }
@@ -48,9 +61,10 @@ function ConfirmationContent() {
 
     const fetchOrder = async (isInitial = false) => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/${id}`, {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const res = await fetch(`${apiUrl}/orders/${id}`, {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${activeToken}`,
           },
         });
         if (!res.ok) {
@@ -88,15 +102,18 @@ function ConfirmationContent() {
   }, [id, token, router]);
 
   const handleCancelOrder = async () => {
-    if (!order || !token) return;
+    if (!order) return;
+    const activeToken = token || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('brewlite-auth') || '{}')?.state?.token : null);
+    if (!activeToken) return;
     if (!confirm(`Bạn có chắc chắn muốn hủy đơn hàng #${order.id}?`)) return;
     setCancelling(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/${order.id}/cancel`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const res = await fetch(`${apiUrl}/orders/${order.id}/cancel`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${activeToken}`,
         },
       });
       const data = await res.json();
@@ -110,15 +127,18 @@ function ConfirmationContent() {
   };
 
   const handleRetryPayment = async () => {
-    if (!order || !token) return;
+    if (!order) return;
+    const activeToken = token || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('brewlite-auth') || '{}')?.state?.token : null);
+    if (!activeToken) return;
     setRetrying(true);
     try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
       const retryKey = `retry_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments`, {
+      const res = await fetch(`${apiUrl}/payments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${activeToken}`,
           'idempotency-key': retryKey,
         },
         body: JSON.stringify({
@@ -134,8 +154,8 @@ function ConfirmationContent() {
         if (data.order) {
           setOrder(data.order);
         } else {
-          const ordRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/${order.id}`, {
-            headers: { Authorization: `Bearer ${token}` },
+          const ordRes = await fetch(`${apiUrl}/orders/${order.id}`, {
+            headers: { Authorization: `Bearer ${activeToken}` },
           });
           if (ordRes.ok) {
             setOrder(await ordRes.json());
@@ -454,7 +474,7 @@ function ConfirmationContent() {
         <div className="flex justify-between items-center pb-2.5 border-b border-stone-100">
           <span className="text-stone-500 font-medium text-sm">Thời gian đặt:</span>
           <span className="text-sm font-semibold text-stone-800">
-            {new Date(order.createdAt).toLocaleString('vi-VN')}
+            {order.createdAt ? new Date(order.createdAt).toLocaleString('vi-VN') : 'Vừa xong'}
           </span>
         </div>
 
@@ -464,7 +484,7 @@ function ConfirmationContent() {
             Món nước đã chọn:
           </p>
           <div className="space-y-2">
-            {order.items.map((item) => (
+            {(order.items || []).map((item) => (
               <div key={item.id} className="flex justify-between text-sm">
                 <div>
                   <p className="font-bold text-stone-900">
@@ -475,7 +495,7 @@ function ConfirmationContent() {
                   )}
                 </div>
                 <span className="font-semibold text-stone-800">
-                  {item.lineTotal.toLocaleString('vi-VN')} đ
+                  {(item.lineTotal || 0).toLocaleString('vi-VN')} đ
                 </span>
               </div>
             ))}
@@ -485,14 +505,14 @@ function ConfirmationContent() {
         {typeof order.discount === 'number' && order.discount > 0 ? (
           <div className="flex justify-between items-center pt-2 text-xs text-emerald-700 font-bold">
             <span>Giảm giá ({order.voucherCode || 'Voucher'}):</span>
-            <span>-{order.discount.toLocaleString('vi-VN')} đ</span>
+            <span>-{(order.discount || 0).toLocaleString('vi-VN')} đ</span>
           </div>
         ) : null}
 
         <div className="pt-3 border-t border-stone-200 flex justify-between items-center">
           <span className="font-bold text-stone-900">Tổng thanh toán:</span>
           <span className="text-2xl font-black text-amber-900">
-            {order.total.toLocaleString('vi-VN')} đ
+            {(order.total || 0).toLocaleString('vi-VN')} đ
           </span>
         </div>
       </div>

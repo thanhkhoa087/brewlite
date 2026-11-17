@@ -25,10 +25,15 @@ export default function MenuPage() {
   );
   const email = useAuthStore((s) => s.email);
   const fullName = useAuthStore((s) => s.fullName);
+  const role = useAuthStore((s) => s.role);
   const logout = useAuthStore((s) => s.logout);
   const [products, setProducts] = useState<Product[]>(DEFAULT_PRODUCTS);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const displayFullName = (fullName || email?.split('@')[0] || '')
+    .replace(/\s*\((?:Khách hàng|Customer)\)/gi, '')
+    .trim();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -74,7 +79,21 @@ export default function MenuPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          {/* Nút truy cập nhanh Quầy Barista / Trang Quản lý nếu tài khoản là Staff */}
+          {(role === 'BARISTA' || role === 'ADMIN') && (
+            <Link
+              href="/barista"
+              className="flex items-center gap-1.5 rounded-full bg-amber-800 hover:bg-amber-900 text-white px-3 py-1.5 text-xs font-bold shadow-sm transition active:scale-[0.98]"
+              title="Đi tới quầy pha chế KDS"
+            >
+              <span>☕</span>
+              <span className="hidden sm:inline">
+                {role === 'ADMIN' ? 'Trang Quản Lý' : 'Quầy Barista'}
+              </span>
+            </Link>
+          )}
+
           {email ? (
             <div className="relative" ref={dropdownRef}>
               <button
@@ -82,17 +101,22 @@ export default function MenuPage() {
                 className="flex items-center gap-2 rounded-full border border-stone-200 bg-white px-3.5 py-2 text-sm font-semibold text-stone-800 shadow-sm hover:bg-stone-50 transition active:scale-[0.99]"
               >
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-amber-900 text-xs font-bold">
-                  👤
+                  {role === 'ADMIN' ? '👨‍💼' : role === 'BARISTA' ? '🧑‍🍳' : '👤'}
                 </span>
                 <span className="text-stone-600 hidden sm:inline">
                   Xin chào,{' '}
                   <strong className="text-stone-900 font-bold">
-                    {fullName || email.split('@')[0]}
+                    {displayFullName}
                   </strong>
                 </span>
                 <span className="text-stone-900 font-bold sm:hidden">
-                  {fullName || email.split('@')[0]}
+                  {displayFullName}
                 </span>
+                {(role === 'BARISTA' || role === 'ADMIN') && (
+                  <span className="rounded bg-amber-100 text-amber-900 text-[10px] font-bold px-1.5 py-0.5 border border-amber-300 hidden md:inline">
+                    {role === 'ADMIN' ? 'Admin' : 'Barista'}
+                  </span>
+                )}
                 <svg
                   className={`h-4 w-4 text-stone-400 transition-transform ${
                     showUserDropdown ? 'rotate-180' : ''
@@ -106,18 +130,41 @@ export default function MenuPage() {
               </button>
 
               {showUserDropdown && (
-                <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-stone-200 bg-white py-2 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute right-0 mt-2 w-60 rounded-2xl border border-stone-200 bg-white py-2 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100">
                   <div className="px-4 py-2 border-b border-stone-100">
-                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">
-                      Tài khoản
-                    </p>
-                    <p className="text-sm font-bold text-stone-900 truncate">
-                      {fullName || email}
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+                        Tài khoản
+                      </p>
+                      {role && (
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                          role === 'ADMIN'
+                            ? 'bg-purple-50 text-purple-700 border-purple-200'
+                            : role === 'BARISTA'
+                            ? 'bg-amber-50 text-amber-800 border-amber-200'
+                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        }`}>
+                          {role === 'ADMIN' ? '👨‍💼 Quản lý' : role === 'BARISTA' ? '🧑‍🍳 Barista' : '👤 Khách hàng'}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm font-bold text-stone-900 truncate mt-0.5">
+                      {displayFullName || email}
                     </p>
                     {email && <p className="text-xs text-stone-500 truncate">{email}</p>}
                   </div>
 
                   <div className="py-1">
+                    {(role === 'BARISTA' || role === 'ADMIN') && (
+                      <Link
+                        href="/barista"
+                        onClick={() => setShowUserDropdown(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-sm font-bold text-amber-800 hover:bg-amber-50 transition border-b border-stone-100 mb-1"
+                      >
+                        <span className="text-base">☕</span>
+                        <span>Vào quầy pha chế (KDS)</span>
+                      </Link>
+                    )}
                     <Link
                       href="/orders"
                       onClick={() => setShowUserDropdown(false)}

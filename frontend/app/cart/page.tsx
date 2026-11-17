@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useCartStore } from '@/lib/cartStore';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/authStore';
 
@@ -14,11 +14,22 @@ export default function CartPage() {
   const router = useRouter();
   const token = useAuthStore((s) => s.token);
   const email = useAuthStore((s) => s.email);
+  const role = useAuthStore((s) => s.role);
 
   const [method, setMethod] = useState<'WALLET' | 'CARD'>('WALLET');
   const [simulateFailure, setSimulateFailure] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  // Lưu thông tin đơn lỗi để hỗ trợ khách hàng bấm thanh toán lại trực tiếp
+  const [failedOrder, setFailedOrder] = useState<{ id: number; total: number } | null>(null);
+
+  // Khi người dùng thay đổi giỏ hàng, xóa phiên lỗi cũ để tạo đơn mới chuẩn xác
+  useEffect(() => {
+    if (failedOrder) {
+      setFailedOrder(null);
+    }
+  }, [items]);
 
   // Task 10: Khuyến mãi (Voucher)
   const [voucherInput, setVoucherInput] = useState('');
@@ -78,7 +89,7 @@ export default function CartPage() {
     setVoucherError('');
   }
 
-  async function handleCheckout() {
+  async function handleCheckout(isRetry = false) {
     if (!token) {
       router.push('/login');
       return;
@@ -90,33 +101,41 @@ export default function CartPage() {
       // Sinh Idempotency-Key để chống đặt trùng / trừ tiền 2 lần (Task 10 - Requirement 2)
       const idempotencyKey = `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-      // 1. Tạo đơn hàng (Trạng thái ban đầu: PENDING, áp dụng Voucher và Idempotency-Key)
-      const orderRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-          'idempotency-key': idempotencyKey,
-        },
-        body: JSON.stringify({
-          items: items.map((i) => ({
-            productId: i.productId,
-            size: i.size,
-            toppings: i.toppings,
-            qty: i.qty,
-          })),
-          voucherCode: appliedVoucher?.code || undefined,
-          idempotencyKey,
-        }),
-      });
+      let orderIdToPay: number;
 
-      const orderData = await orderRes.json();
-      if (!orderRes.ok) {
-        throw new Error(
-          Array.isArray(orderData.message)
-            ? orderData.message.join(', ')
-            : orderData.message || 'Lỗi khi tạo đơn hàng',
-        );
+      // Nếu khách bấm "Thử thanh toán lại" và đã có đơn hàng bị lỗi trước đó
+      if (isRetry && failedOrder) {
+        orderIdToPay = failedOrder.id;
+      } else {
+        // 1. Tạo đơn hàng mới (Trạng thái ban đầu: PENDING, áp dụng Voucher và Idempotency-Key)
+        const orderRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+            'idempotency-key': idempotencyKey,
+          },
+          body: JSON.stringify({
+            items: items.map((i) => ({
+              productId: i.productId,
+              size: i.size,
+              toppings: i.toppings,
+              qty: i.qty,
+            })),
+            voucherCode: appliedVoucher?.code || undefined,
+            idempotencyKey,
+          }),
+        });
+
+        const orderData = await orderRes.json();
+        if (!orderRes.ok) {
+          throw new Error(
+            Array.isArray(orderData.message)
+              ? orderData.message.join(', ')
+              : orderData.message || 'Lỗi khi tạo đơn hàng',
+          );
+        }
+        orderIdToPay = orderData.id;
       }
 
       // 2. Thực hiện thanh toán không tiền mặt (Task 8 & 10: Idempotent Payment)
@@ -128,7 +147,7 @@ export default function CartPage() {
           'idempotency-key': idempotencyKey,
         },
         body: JSON.stringify({
-          orderId: orderData.id,
+          orderId: orderIdToPay,
           method,
           simulateFailure,
           idempotencyKey,
@@ -136,17 +155,29 @@ export default function CartPage() {
       });
 
       const payData = await payRes.json().catch(() => ({}));
-      if (!payRes.ok && payData.status !== 'PAYMENT_FAILED') {
+
+      // KIỂM TRA KẾT QUẢ THANH TOÁN:
+      if (!payRes.ok || payData.status === 'PAYMENT_FAILED' || !payData.success) {
+        // THANH TOÁN LỖI:
+        // 1. TUYỆT ĐỐI KHÔNG XÓA GIỎ HÀNG (giỏ hàng giữ nguyên 100%)
+        // 2. Lưu lại đơn lỗi để khách có thể thử thanh toán lại trực tiếp
+        setFailedOrder({ id: orderIdToPay, total });
+
+        const reason =
+          payData.message ||
+          (Array.isArray(payData.message) ? payData.message.join(', ') : 'Giao dịch thanh toán thất bại');
+
         throw new Error(
-          Array.isArray(payData.message)
-            ? payData.message.join(', ')
-            : payData.message || 'Lỗi xử lý thanh toán',
+          `${reason}. Giỏ hàng của bạn vẫn được giữ nguyên đầy đủ. Bạn có thể đổi phương thức hoặc bấm "Thử thanh toán lại" ngay bên dưới!`,
         );
       }
 
-      // Xóa giỏ hàng và chuyển hướng tới màn hình kết quả thanh toán của đơn hàng
+      // THANH TOÁN THÀNH CÔNG (status === 'PAID'):
+      // 1. Lúc này mới xóa giỏ hàng
       clearCart();
-      router.push(`/orders/${orderData.id}/confirmation`);
+      setFailedOrder(null);
+      // 2. Chuyển hướng tới màn hình xác nhận đơn hàng thành công
+      router.push(`/orders/${orderIdToPay}/confirmation`);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -188,6 +219,14 @@ export default function CartPage() {
           ← Tiếp tục chọn món
         </Link>
         <div className="flex items-center gap-2">
+          {(role === 'BARISTA' || role === 'ADMIN') && (
+            <>
+              <Link href="/barista" className="text-xs font-bold text-amber-800 hover:text-amber-900 transition">
+                ☕ Quầy Barista
+              </Link>
+              <span className="text-stone-300">•</span>
+            </>
+          )}
           <Link href="/orders" className="text-xs font-semibold text-stone-600 hover:text-amber-900 transition">
             Lịch sử đơn
           </Link>
@@ -400,25 +439,56 @@ export default function CartPage() {
         </div>
 
         {error && (
-          <div className="mt-4 rounded-xl bg-red-50 p-3.5 text-xs font-semibold text-red-700 border border-red-200">
-            <p>{error}</p>
-            <div className="mt-2 pt-2 border-t border-red-200/60">
-              <Link href="/orders" className="font-bold text-amber-900 hover:underline">
-                → Đi đến lịch sử đơn hàng
-              </Link>
+          <div className="mt-4 rounded-xl bg-amber-50 p-3.5 text-xs font-semibold text-amber-950 border border-amber-300">
+            <div className="flex items-center gap-1.5 font-bold text-rose-700 mb-1">
+              <span>⚠️ Giao dịch thanh toán chưa thành công</span>
             </div>
+            <p className="text-stone-700 leading-relaxed">{error}</p>
+            <p className="mt-2 text-[11px] text-stone-500 font-normal">
+              💡 Lưu ý: Giỏ hàng được giữ nguyên. Đơn lỗi sẽ không lưu vào lịch sử đơn hàng cho đến khi bạn thanh toán thành công.
+            </p>
           </div>
         )}
 
-        <button
-          onClick={handleCheckout}
-          disabled={submitting}
-          className="mt-5 w-full rounded-xl bg-amber-900 py-3.5 font-bold text-white shadow-md hover:bg-amber-800 transition active:scale-[0.99] disabled:opacity-50"
-        >
-          {submitting
-            ? 'Đang xử lý đơn & thanh toán...'
-            : `Xác nhận thanh toán • ${total.toLocaleString('vi-VN')} đ`}
-        </button>
+        {failedOrder ? (
+          <div className="mt-5 space-y-2">
+            <button
+              onClick={() => handleCheckout(true)}
+              disabled={submitting}
+              className="w-full rounded-xl bg-amber-900 py-3.5 font-bold text-white shadow-md hover:bg-amber-800 transition active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {submitting ? (
+                'Đang thử thanh toán lại...'
+              ) : (
+                <>
+                  <span>🔄 Thử thanh toán lại</span>
+                  <span>•</span>
+                  <span>{total.toLocaleString('vi-VN')} đ</span>
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => {
+                setFailedOrder(null);
+                setError('');
+              }}
+              disabled={submitting}
+              className="w-full rounded-xl border border-stone-300 bg-white py-2.5 text-xs font-semibold text-stone-600 hover:bg-stone-50 transition"
+            >
+              Tạo phiên đặt đơn mới
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => handleCheckout(false)}
+            disabled={submitting}
+            className="mt-5 w-full rounded-xl bg-amber-900 py-3.5 font-bold text-white shadow-md hover:bg-amber-800 transition active:scale-[0.99] disabled:opacity-50"
+          >
+            {submitting
+              ? 'Đang xử lý đơn & thanh toán...'
+              : `Xác nhận thanh toán • ${total.toLocaleString('vi-VN')} đ`}
+          </button>
+        )}
       </div>
     </main>
   );

@@ -1,0 +1,39 @@
+@startuml usecase-overview
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+
+actor "Khách hàng\n(Customer)" as Customer
+actor "Nhân viên quầy\n(Barista)" as Barista
+actor "Quản lý cửa hàng\n(Manager)" as Manager
+actor "Cổng thanh toán\n(Payment Gateway)" as PaymentGW
+
+rectangle "Hệ Thống BrewLite" {
+  usecase "UC01: Xem menu và danh mục" as UC01
+  usecase "UC02: Tùy biến món & Giỏ hàng" as UC02
+  usecase "UC03: Đăng ký & Đăng nhập (JWT)" as UC03
+  usecase "UC04: Đặt và thanh toán đơn hàng" as UC04
+  usecase "UC05: Theo dõi trạng thái đơn" as UC05
+  usecase "UC06: Xem lịch sử đơn hàng" as UC06
+  usecase "UC07: Cập nhật tiến độ pha chế" as UC07
+  usecase "UC08: Quản lý thực đơn & Báo cáo" as UC08
+  usecase "UC09: Xử lý giao dịch trừ tiền" as UC09
+  usecase "UC10: Áp dụng mã khuyến mãi" as UC10
+
+  UC04 .> UC02 : <<include>>
+  UC04 .> UC03 : <<include>>
+  UC04 .> UC09 : <<include>>
+  UC04 ..> UC10 : <<extend>>
+}
+
+Customer --> UC01
+Customer --> UC02
+Customer --> UC03
+Customer --> UC04
+Customer --> UC05
+Customer --> UC06
+
+Barista --> UC07
+Manager --> UC08
+
+PaymentGW --> UC09
+@enduml

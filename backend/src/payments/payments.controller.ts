@@ -23,4 +23,14 @@ export class PaymentsController {
   ) {
     return this.payments.pay(req.user.userId, dto, headerKey);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('process')
+  payProcess(
+    @Request() req: { user: { userId: number } },
+    @Body() dto: CreatePaymentDto,
+    @Headers('idempotency-key') headerKey?: string,
+  ) {
+    return this.payments.pay(req.user.userId, dto, headerKey);
+  }
 }

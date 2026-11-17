@@ -1,6 +1,17 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { AuthDto } from './auth.dto';
+import { AuthDto, CreateBaristaDto } from './auth.dto';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -14,5 +25,48 @@ export class AuthController {
   @Post('login')
   login(@Body() dto: AuthDto) {
     return this.auth.login(dto);
+  }
+
+  // --- QUẢN LÝ TÀI KHOẢN BARISTA (CHỈ DÀNH CHO ADMIN / QUẢN LÝ) ---
+
+  @UseGuards(JwtAuthGuard)
+  @Get('baristas')
+  getBaristas(@Request() req: { user: { userId: number } }) {
+    return this.auth.getBaristas(req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('baristas')
+  createBarista(
+    @Request() req: { user: { userId: number } },
+    @Body() dto: CreateBaristaDto,
+  ) {
+    return this.auth.createBarista(req.user.userId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('baristas/:id')
+  deleteBarista(
+    @Request() req: { user: { userId: number } },
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.auth.deleteBarista(req.user.userId, id);
+  }
+
+  // --- QUẢN LÝ DANH SÁCH USER ---
+
+  @Get('users')
+  getAllUsers() {
+    return this.auth.getAllUsers();
+  }
+
+  @Delete('users/:id')
+  deleteUser(@Param('id', ParseIntPipe) id: number) {
+    return this.auth.deleteUser(id);
+  }
+
+  @Post('users/reset')
+  resetUsers() {
+    return this.auth.resetUsers();
   }
 }

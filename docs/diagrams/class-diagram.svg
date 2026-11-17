@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 620" width="100%" height="100%" style="background:#ffffff; font-family:'Segoe UI', Arial, sans-serif;">
+  <!-- Title -->
+  <text x="460" y="28" font-size="17" font-weight="bold" text-anchor="middle" fill="#0f172a">SƠ ĐỒ LỚP MIỀN NGHIỆP VỤ (DOMAIN CLASS DIAGRAM) - BREWLITE</text>
+
+  <!-- Class User (No loyaltyPoints because FR-10 is Won't) -->
+  <rect x="30" y="50" width="180" height="140" rx="6" fill="#f8fafc" stroke="#475569" stroke-width="1.2"/>
+  <rect x="30" y="50" width="180" height="26" fill="#e2e8f0" stroke="#475569" stroke-width="1.2"/>
+  <text x="120" y="68" font-size="12" font-weight="bold" text-anchor="middle">User</text>
+  <text x="40" y="92" font-size="10" fill="#334155">- id: String</text>
+  <text x="40" y="108" font-size="10" fill="#334155">- email: String</text>
+  <text x="40" y="124" font-size="10" fill="#334155">- fullName: String</text>
+  <text x="40" y="140" font-size="10" fill="#334155">- role: UserRole</text>
+  <line x1="30" y1="150" x2="210" y2="150" stroke="#cbd5e1"/>
+  <text x="40" y="168" font-size="10" fill="#1e293b">+ register(), login()</text>
+
+  <!-- Class Order -->
+  <rect x="290" y="50" width="200" height="185" rx="6" fill="#f0f9ff" stroke="#0284c7" stroke-width="1.2"/>
+  <rect x="290" y="50" width="200" height="26" fill="#bae6fd" stroke="#0284c7" stroke-width="1.2"/>
+  <text x="390" y="68" font-size="12" font-weight="bold" text-anchor="middle">Order</text>
+  <text x="300" y="92" font-size="10" fill="#0369a1">- id: String</text>
+  <text x="300" y="108" font-size="10" fill="#0369a1">- orderCode: String</text>
+  <text x="300" y="124" font-size="10" fill="#0369a1">- promotionId: String</text>
+  <text x="300" y="140" font-size="10" fill="#0369a1">- subTotal: Decimal</text>
+  <text x="300" y="156" font-size="10" fill="#0369a1">- totalAmount: Decimal</text>
+  <text x="300" y="172" font-size="10" fill="#0369a1">- status: OrderStatus</text>
+  <line x1="290" y1="184" x2="490" y2="184" stroke="#bae6fd"/>
+  <text x="300" y="200" font-size="10" fill="#0c4a6e">+ calculateTotal(): Decimal</text>
+  <text x="300" y="214" font-size="10" fill="#0c4a6e">+ cancel(): Void</text>
+
+  <!-- Class OrderItem -->
+  <rect x="570" y="50" width="180" height="175" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.2"/>
+  <rect x="570" y="50" width="180" height="26" fill="#bbf7d0" stroke="#16a34a" stroke-width="1.2"/>
+  <text x="660" y="68" font-size="12" font-weight="bold" text-anchor="middle">OrderItem</text>
+  <text x="580" y="92" font-size="10" fill="#15803d">- id: String</text>
+  <text x="580" y="108" font-size="10" fill="#15803d">- size: String (S, M, L)</text>
+  <text x="580" y="124" font-size="10" fill="#15803d">- sweetLevel: Int</text>
+  <text x="580" y="140" font-size="10" fill="#15803d">- iceLevel: Int</text>
+  <text x="580" y="156" font-size="10" fill="#15803d">- quantity: Int</text>
+  <text x="580" y="172" font-size="10" fill="#15803d">- itemTotal: Decimal</text>
+  <line x1="570" y1="184" x2="750" y2="184" stroke="#bbf7d0"/>
+  <text x="580" y="202" font-size="10" fill="#14532d">+ computeItemTotal()</text>
+
+  <!-- Class Product -->
+  <rect x="570" y="300" width="180" height="160" rx="6" fill="#fffbeb" stroke="#d97706" stroke-width="1.2"/>
+  <rect x="570" y="300" width="180" height="26" fill="#fde68a" stroke="#d97706" stroke-width="1.2"/>
+  <text x="660" y="318" font-size="12" font-weight="bold" text-anchor="middle">Product</text>
+  <text x="580" y="342" font-size="10" fill="#92400e">- id: String</text>
+  <text x="580" y="358" font-size="10" fill="#92400e">- name: String</text>
+  <text x="580" y="374" font-size="10" fill="#92400e">- category: String</text>
+  <text x="580" y="390" font-size="10" fill="#92400e">- basePrice: Decimal</text>
+  <text x="580" y="406" font-size="10" fill="#92400e">- stock: Int</text>
+  <line x1="570" y1="418" x2="750" y2="418" stroke="#fde68a"/>
+  <text x="580" y="434" font-size="10" fill="#78350f">+ checkAvailability()</text>
+  <text x="580" y="448" font-size="10" fill="#78350f">+ deductStock(qty)</text>
+
+  <!-- Class Payment -->
+  <rect x="290" y="310" width="200" height="170" rx="6" fill="#fdf2f8" stroke="#db2777" stroke-width="1.2"/>
+  <rect x="290" y="310" width="200" height="26" fill="#fbcfe8" stroke="#db2777" stroke-width="1.2"/>
+  <text x="390" y="328" font-size="12" font-weight="bold" text-anchor="middle">Payment</text>
+  <text x="300" y="352" font-size="10" fill="#9d174d">- id: String</text>
+  <text x="300" y="368" font-size="10" fill="#9d174d">- amount: Decimal</text>
+  <text x="300" y="384" font-size="10" fill="#9d174d">- method: PaymentMethod</text>
+  <text x="300" y="400" font-size="10" fill="#9d174d">- status: PaymentStatus</text>
+  <text x="300" y="416" font-size="10" fill="#9d174d">- idempotencyKey: String</text>
+  <text x="300" y="432" font-size="10" fill="#9d174d">- transactionCode: String</text>
+  <line x1="290" y1="444" x2="490" y2="444" stroke="#fbcfe8"/>
+  <text x="300" y="460" font-size="10" fill="#831843">+ processPayment()</text>
+
+  <!-- Promotion (Connected to Order) -->
+  <rect x="30" y="270" width="180" height="140" rx="6" fill="#f3e8ff" stroke="#9333ea" stroke-width="1.2"/>
+  <rect x="30" y="270" width="180" height="26" fill="#e9d5ff" stroke="#9333ea" stroke-width="1.2"/>
+  <text x="120" y="288" font-size="12" font-weight="bold" text-anchor="middle">Promotion</text>
+  <text x="40" y="312" font-size="10" fill="#6b21a8">- id: String</text>
+  <text x="40" y="328" font-size="10" fill="#6b21a8">- code: String</text>
+  <text x="40" y="344" font-size="10" fill="#6b21a8">- discountValue: Decimal</text>
+  <text x="40" y="360" font-size="10" fill="#6b21a8">- isActive: Boolean</text>
+  <line x1="30" y1="372" x2="210" y2="372" stroke="#e9d5ff"/>
+  <text x="40" y="388" font-size="10" fill="#581c87">+ applyDiscount()</text>
+
+  <!-- Relationships -->
+  <!-- User to Order (1 to 0..*) -->
+  <line x1="210" y1="110" x2="290" y2="110" stroke="#334155" stroke-width="1.5"/>
+  <text x="220" y="104" font-size="10">1</text>
+  <text x="270" y="104" font-size="10">0..*</text>
+  <text x="235" y="125" font-size="9" fill="#64748b">places &gt;</text>
+
+  <!-- Order to OrderItem (Composition 1 to 1..*) -->
+  <line x1="490" y1="110" x2="570" y2="110" stroke="#334155" stroke-width="1.5"/>
+  <polygon points="490,110 498,105 506,110 498,115" fill="#334155"/>
+  <text x="512" y="104" font-size="10">1</text>
+  <text x="550" y="104" font-size="10">1..*</text>
+
+  <!-- OrderItem to Product (0..* to 1) -->
+  <line x1="660" y1="225" x2="660" y2="300" stroke="#334155" stroke-width="1.5"/>
+  <text x="668" y="240" font-size="10">0..*</text>
+  <text x="668" y="290" font-size="10">1</text>
+
+  <!-- Order to Payment (1 to 0..1) -->
+  <line x1="390" y1="235" x2="390" y2="310" stroke="#334155" stroke-width="1.5"/>
+  <text x="396" y="250" font-size="10">1</text>
+  <text x="396" y="300" font-size="10">0..1</text>
+  <text x="405" y="275" font-size="9" fill="#64748b">settled by</text>
+
+  <!-- Order to Promotion (0..* to 0..1 - Connected!) -->
+  <line x1="290" y1="180" x2="210" y2="330" stroke="#9333ea" stroke-width="1.5"/>
+  <text x="280" y="195" font-size="10" fill="#7e22ce">0..*</text>
+  <text x="220" y="325" font-size="10" fill="#7e22ce">0..1</text>
+  <text x="248" y="255" font-size="9" fill="#9333ea" font-weight="bold">uses coupon &gt;</text>
+</svg>
