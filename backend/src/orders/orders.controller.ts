@@ -49,7 +49,8 @@ export class OrdersController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto?: CancelOrderDto,
   ) {
-    return this.orders.cancelOrder(id, req.user.userId, false, dto?.reason);
+    const isBarista = req.user.role === 'BARISTA' || req.user.role === 'ADMIN';
+    return this.orders.cancelOrder(id, req.user.userId, isBarista, dto?.reason);
   }
 
   @Get('barista/queue')

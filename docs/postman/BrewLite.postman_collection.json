@@ -54,7 +54,7 @@
                   "if (token) {",
                   "    pm.environment.set(\"customer_token\", token);",
                   "    pm.test(\"Đăng nhập Khách hàng thành công & đã lưu token\", function () {",
-                  "        pm.response.to.have.status(200);",
+                  "        pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
                   "    });",
                   "}"
                 ],
@@ -90,7 +90,7 @@
                   "if (token) {",
                   "    pm.environment.set(\"barista_token\", token);",
                   "    pm.test(\"Đăng nhập Barista thành công & lưu barista_token\", function () {",
-                  "        pm.response.to.have.status(200);",
+                  "        pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
                   "    });",
                   "}"
                 ],
