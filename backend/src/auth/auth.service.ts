@@ -11,7 +11,7 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma.service';
 import { AuthDto, CreateBaristaDto } from './auth.dto';
 
-const MEMORY_USERS: any[] = [
+export const MEMORY_USERS: any[] = [
   {
     id: 1,
     email: 'user@brewlite.vn',
@@ -86,6 +86,7 @@ export class AuthService {
       phone: dto.phone || '',
       passwordHash,
       role: 'CUSTOMER',
+      loyaltyPoints: 0,
     };
     MEMORY_USERS.push(newUser);
     return {
@@ -136,8 +137,50 @@ export class AuthService {
         fullName,
         phone,
         role,
+        loyaltyPoints: user.loyaltyPoints ?? 0,
       },
     };
+  }
+
+  async getProfile(userId: number) {
+    let user: any = null;
+    if (this.prisma.isConnected) {
+      try {
+        user = await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: {
+            id: true,
+            email: true,
+            fullName: true,
+            phone: true,
+            role: true,
+            loyaltyPoints: true,
+          },
+        });
+      } catch {
+        // Fallback
+      }
+    }
+
+    if (!user) {
+      const mem = MEMORY_USERS.find((u) => u.id === userId);
+      if (mem) {
+        user = {
+          id: mem.id,
+          email: mem.email,
+          fullName: mem.fullName || mem.email.split('@')[0],
+          phone: mem.phone || '',
+          role: mem.role || 'CUSTOMER',
+          loyaltyPoints: mem.loyaltyPoints ?? 0,
+        };
+      }
+    }
+
+    if (!user) {
+      throw new NotFoundException('Không tìm thấy thông tin tài khoản');
+    }
+
+    return user;
   }
 
   // --- CÁC HÀM QUẢN LÝ TÀI KHOẢN BARISTA (CHỈ DÀNH CHO ADMIN / QUẢN LÝ) ---

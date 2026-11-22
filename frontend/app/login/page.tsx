@@ -55,6 +55,7 @@ export default function LoginPage() {
         data.user?.fullName || '',
         data.user?.phone || '',
         data.user?.role || 'CUSTOMER',
+        data.user?.loyaltyPoints ?? 0,
       );
 
       if (data.user?.role === 'BARISTA' || data.user?.role === 'ADMIN') {

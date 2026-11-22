@@ -26,6 +26,7 @@ export default function OrdersHistoryPage() {
   const token = useAuthStore((s) => s.token);
   const email = useAuthStore((s) => s.email);
   const role = useAuthStore((s) => s.role);
+  const setLoyaltyPoints = useAuthStore((s) => s.setLoyaltyPoints);
   const router = useRouter();
 
   const [orders, setOrders] = useState<Order[]>([]);
@@ -89,6 +90,9 @@ export default function OrdersHistoryPage() {
       if (!res.ok) throw new Error(data.message || 'Thanh toán thất bại');
 
       if (data.status === 'PAID' || data.success) {
+        if (typeof data.totalLoyaltyPoints === 'number') {
+          setLoyaltyPoints(data.totalLoyaltyPoints);
+        }
         // Cập nhật trạng thái ngay lập tức trên giao diện danh sách đơn hàng từ PENDING/PAYMENT_FAILED sang PAID
         setOrders((prev) =>
           prev.map((ord) => (ord.id === orderId ? { ...ord, status: 'PAID' } : ord)),

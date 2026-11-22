@@ -13,7 +13,16 @@ type AuthState = {
   fullName: string | null;
   phone: string | null;
   role: string | null;
-  setAuth: (token: string, email: string, fullName?: string, phone?: string, role?: string) => void;
+  loyaltyPoints: number;
+  setAuth: (
+    token: string,
+    email: string,
+    fullName?: string,
+    phone?: string,
+    role?: string,
+    loyaltyPoints?: number,
+  ) => void;
+  setLoyaltyPoints: (points: number) => void;
   logout: () => void;
 };
 
@@ -25,15 +34,26 @@ export const useAuthStore = create<AuthState>()(
       fullName: null,
       phone: null,
       role: null,
-      setAuth: (token, email, fullName, phone, role) =>
+      loyaltyPoints: 0,
+      setAuth: (token, email, fullName, phone, role, loyaltyPoints) =>
         set({
           token,
           email,
           fullName: cleanFullName(fullName, email),
           phone: phone || '',
           role: role || 'CUSTOMER',
+          loyaltyPoints: loyaltyPoints ?? 0,
         }),
-      logout: () => set({ token: null, email: null, fullName: null, phone: null, role: null }),
+      setLoyaltyPoints: (points) => set({ loyaltyPoints: points }),
+      logout: () =>
+        set({
+          token: null,
+          email: null,
+          fullName: null,
+          phone: null,
+          role: null,
+          loyaltyPoints: 0,
+        }),
     }),
     {
       name: 'brewlite-auth',

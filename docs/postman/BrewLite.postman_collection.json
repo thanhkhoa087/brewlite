@@ -164,7 +164,9 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{barista_token}}" }
+            ],
             "url": {
               "raw": "{{base_url}}/products/ingredients/stock",
               "host": ["{{base_url}}"],

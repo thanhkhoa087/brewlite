@@ -72,6 +72,7 @@ export default function RegisterPage() {
         data.user?.fullName || fullName.trim(),
         data.user?.phone || phone.trim(),
         data.user?.role || 'CUSTOMER',
+        data.user?.loyaltyPoints ?? 0,
       );
 
       router.push('/');

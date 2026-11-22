@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { assertTransition, OrderStatus } from '../orders/order-state';
 import { MEMORY_ORDERS } from '../orders/orders.service';
+import { MEMORY_USERS } from '../auth/auth.service';
 import { PrismaService } from '../prisma.service';
 import { CreatePaymentDto } from './payments.dto';
 
@@ -189,6 +190,15 @@ export class PaymentsService {
 
     order.status = nextStatus;
 
+    let totalLoyalty = 0;
+    const memUser = MEMORY_USERS.find((u) => u.id === userId);
+    if (memUser) {
+      if (earnedPoints > 0) {
+        memUser.loyaltyPoints = (memUser.loyaltyPoints || 0) + earnedPoints;
+      }
+      totalLoyalty = memUser.loyaltyPoints || 0;
+    }
+
     return {
       success: !dto.simulateFailure,
       status: nextStatus,
@@ -197,6 +207,7 @@ export class PaymentsService {
       method: dto.method,
       idempotencyKey: effectiveKey,
       earnedPoints,
+      totalLoyaltyPoints: totalLoyalty,
       message: !dto.simulateFailure
         ? `Thanh toán thành công. +${earnedPoints} điểm tích lũy!`
         : 'Thanh toán thất bại, vui lòng thử lại',

@@ -180,11 +180,14 @@ export default function BaristaKdsPage() {
     }
   };
 
-  // 3. Tải khối lượng nguyên liệu thô (Ingredient-based Stock)
+  // 3. Tải khối lượng nguyên liệu thô (Ingredient-based Stock - chỉ Barista/Admin)
   const fetchRawIngredients = async () => {
+    if (!token || !isBaristaOrAdmin) return;
     setLoadingStock(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/ingredients/stock`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/ingredients/stock`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (res.ok) {
         const data = await res.json();
         setRawIngredients(data);
@@ -266,6 +269,7 @@ export default function BaristaKdsPage() {
         data.user.fullName,
         data.user.phone,
         data.user.role,
+        data.user.loyaltyPoints ?? 0,
       );
     } catch (err: any) {
       setLoginError(err.message);
@@ -476,7 +480,10 @@ export default function BaristaKdsPage() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/ingredients/${ingredientId}/stock`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ stock: Number(newStock) }),
       });
       const data = await res.json();

@@ -115,10 +115,11 @@ Import trực tiếp 2 file sau vào Postman để chạy toàn bộ kịch bả
 | :---: | :--- | :--- | :---: |
 | `POST` | `/auth/register` | Đăng ký tài khoản người dùng mới | Không |
 | `POST` | `/auth/login` | Đăng nhập và nhận JWT Token | Không |
+| `GET` | `/auth/me` | Lấy thông tin tài khoản & điểm Loyalty hiện tại | **Có** |
 | `GET` | `/products` | Danh sách menu đồ uống (tự tính số ly từ kho) | Không |
 | `GET` | `/products/:id` | Chi tiết một món nước | Không |
-| `GET` | `/products/ingredients/stock` | Xem khối lượng tồn kho nguyên liệu thô (g/ml) | Không |
-| `PATCH` | `/products/ingredients/:id/stock` | Cập nhật số lượng nguyên liệu thô trong kho | Không |
+| `GET` | `/products/ingredients/stock` | Xem khối lượng tồn kho nguyên liệu thô (g/ml) | **Có (Barista / Admin)** |
+| `PATCH` | `/products/ingredients/:id/stock` | Cập nhật số lượng nguyên liệu thô trong kho | **Có (Barista / Admin)** |
 | `POST` | `/orders` | Tạo đơn hàng mới (hỗ trợ Voucher, Idempotency-Key, Optimistic Lock) | **Có** |
 | `GET` | `/orders/me` | Lấy lịch sử đơn hàng của người dùng hiện tại | **Có** |
 | `GET` | `/orders/:id` | Xem chi tiết một đơn hàng | **Có** |

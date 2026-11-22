@@ -15,6 +15,7 @@ export default function CartPage() {
   const token = useAuthStore((s) => s.token);
   const email = useAuthStore((s) => s.email);
   const role = useAuthStore((s) => s.role);
+  const setLoyaltyPoints = useAuthStore((s) => s.setLoyaltyPoints);
 
   const [method, setMethod] = useState<'WALLET' | 'CARD'>('WALLET');
   const [simulateFailure, setSimulateFailure] = useState(false);
@@ -173,10 +174,14 @@ export default function CartPage() {
       }
 
       // THANH TOÁN THÀNH CÔNG (status === 'PAID'):
-      // 1. Lúc này mới xóa giỏ hàng
+      // 1. Cập nhật ngay điểm tích lũy thành viên mới nhất
+      if (typeof payData.totalLoyaltyPoints === 'number') {
+        setLoyaltyPoints(payData.totalLoyaltyPoints);
+      }
+      // 2. Xóa giỏ hàng
       clearCart();
       setFailedOrder(null);
-      // 2. Chuyển hướng tới màn hình xác nhận đơn hàng thành công
+      // 3. Chuyển hướng tới màn hình xác nhận đơn hàng thành công
       router.push(`/orders/${orderIdToPay}/confirmation`);
     } catch (err) {
       setError((err as Error).message);

@@ -30,6 +30,12 @@ export class AuthController {
     return this.auth.login(dto);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  getMe(@Request() req: { user: { userId: number } }) {
+    return this.auth.getProfile(req.user.userId);
+  }
+
   // --- QUẢN LÝ TÀI KHOẢN BARISTA (CHỈ DÀNH CHO ADMIN / QUẢN LÝ) ---
 
   @UseGuards(JwtAuthGuard)

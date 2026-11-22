@@ -23,9 +23,12 @@ export default function MenuPage() {
   const cartCount = useCartStore((s) =>
     s.items.reduce((sum, i) => sum + i.qty, 0),
   );
+  const token = useAuthStore((s) => s.token);
   const email = useAuthStore((s) => s.email);
   const fullName = useAuthStore((s) => s.fullName);
   const role = useAuthStore((s) => s.role);
+  const loyaltyPoints = useAuthStore((s) => s.loyaltyPoints);
+  const setLoyaltyPoints = useAuthStore((s) => s.setLoyaltyPoints);
   const logout = useAuthStore((s) => s.logout);
   const [products, setProducts] = useState<Product[]>(DEFAULT_PRODUCTS);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -34,6 +37,29 @@ export default function MenuPage() {
   const displayFullName = (fullName || email?.split('@')[0] || '')
     .replace(/\s*\((?:Khách hàng|Customer)\)/gi, '')
     .trim();
+
+  const fetchLoyaltyPoints = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (typeof data.loyaltyPoints === 'number') {
+          setLoyaltyPoints(data.loyaltyPoints);
+        }
+      }
+    } catch {
+      // Giữ điểm đã lưu trong store nếu mất kết nối tạm thời
+    }
+  };
+
+  useEffect(() => {
+    if (token) {
+      fetchLoyaltyPoints();
+    }
+  }, [token]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -97,7 +123,11 @@ export default function MenuPage() {
           {email ? (
             <div className="relative" ref={dropdownRef}>
               <button
-                onClick={() => setShowUserDropdown(!showUserDropdown)}
+                onClick={() => {
+                  const next = !showUserDropdown;
+                  setShowUserDropdown(next);
+                  if (next) fetchLoyaltyPoints();
+                }}
                 className="flex items-center gap-2 rounded-full border border-stone-200 bg-white px-3.5 py-2 text-sm font-semibold text-stone-800 shadow-sm hover:bg-stone-50 transition active:scale-[0.99]"
               >
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-amber-900 text-xs font-bold">
@@ -152,6 +182,22 @@ export default function MenuPage() {
                       {displayFullName || email}
                     </p>
                     {email && <p className="text-xs text-stone-500 truncate">{email}</p>}
+
+                    {/* Điểm tích lũy thành viên (Loyalty Points) */}
+                    <div className="mt-2.5 flex items-center justify-between rounded-xl bg-amber-50/90 border border-amber-200/80 px-3 py-2">
+                      <div>
+                        <p className="text-[11px] font-bold text-amber-900 flex items-center gap-1">
+                          <span>⭐</span>
+                          <span>Điểm Loyalty</span>
+                        </p>
+                        <p className="text-[10px] text-amber-700/80">
+                          1 điểm / 10.000 đ
+                        </p>
+                      </div>
+                      <span className="text-sm font-black text-amber-800">
+                        {(loyaltyPoints ?? 0).toLocaleString('vi-VN')} điểm
+                      </span>
+                    </div>
                   </div>
 
                   <div className="py-1">
